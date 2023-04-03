@@ -1814,14 +1814,13 @@ int wolfSSL_get_ciphers(char* buf, int len)
     const CipherSuiteInfo* ciphers = GetCipherNames();
     int ciphersSz = GetCipherNamesSize();
     int i;
-    int cipherNameSz;
 
     if (buf == NULL || len <= 0)
         return BAD_FUNC_ARG;
 
     /* Add each member to the buffer delimited by a : */
     for (i = 0; i < ciphersSz; i++) {
-        cipherNameSz = (int)XSTRLEN(ciphers[i].name);
+        int cipherNameSz = (int)XSTRLEN(ciphers[i].name);
         if (cipherNameSz + 1 < len) {
             XSTRNCPY(buf, ciphers[i].name, len);
             buf += cipherNameSz;
@@ -4637,14 +4636,13 @@ int wolfSSL_want_write(WOLFSSL* ssl)
 
 char* wolfSSL_ERR_error_string(unsigned long errNumber, char* data)
 {
-    static char tmp[WOLFSSL_MAX_ERROR_SZ] = {0};
-
     WOLFSSL_ENTER("wolfSSL_ERR_error_string");
     if (data) {
         SetErrorString((int)errNumber, data);
         return data;
     }
     else {
+        static char tmp[WOLFSSL_MAX_ERROR_SZ] = {0};
         SetErrorString((int)errNumber, tmp);
         return tmp;
     }
@@ -4657,10 +4655,9 @@ void wolfSSL_ERR_error_string_n(unsigned long e, char* buf, unsigned long len)
     if (len >= WOLFSSL_MAX_ERROR_SZ)
         wolfSSL_ERR_error_string(e, buf);
     else {
-        char tmp[WOLFSSL_MAX_ERROR_SZ];
-
         WOLFSSL_MSG("Error buffer too short, truncating");
         if (len) {
+            char tmp[WOLFSSL_MAX_ERROR_SZ];
             wolfSSL_ERR_error_string(e, tmp);
             XMEMCPY(buf, tmp, len-1);
             buf[len-1] = '\0';
@@ -5176,11 +5173,12 @@ WOLFSSL_CERT_MANAGER* wolfSSL_CertManagerNew(void)
 
 void wolfSSL_CertManagerFree(WOLFSSL_CERT_MANAGER* cm)
 {
-    int doFree = 0;
-    int ret;
     WOLFSSL_ENTER("wolfSSL_CertManagerFree");
 
     if (cm) {
+        int doFree = 0;
+        int ret;
+
         wolfSSL_RefDec(&cm->ref, &doFree, &ret);
     #ifdef WOLFSSL_REFCNT_ERROR_RETURN
         if (ret != 0) {
@@ -6569,9 +6567,6 @@ static int ProcessUserChain(WOLFSSL_CTX* ctx, const unsigned char* buff,
 {
     int ret = 0;
     void* heap = wolfSSL_CTX_GetHeap(ctx, ssl);
-#ifdef WOLFSSL_TLS13
-    int cnt = 0;
-#endif
 
     if ((type == CA_TYPE) && (ctx == NULL)) {
         WOLFSSL_MSG("Need context for CA load");
@@ -6591,6 +6586,9 @@ static int ProcessUserChain(WOLFSSL_CTX* ctx, const unsigned char* buff,
         long   consumed = info->consumed;
         word32 idx = 0;
         int    gotOne = 0;
+    #ifdef WOLFSSL_TLS13
+        int cnt = 0;
+    #endif
 
         /* Calculate max possible size, including max headers */
         bufferSz = (word32)(sz - consumed) + (CERT_HEADER_SZ * MAX_CHAIN_DEPTH);
@@ -8783,9 +8781,7 @@ int wolfSSL_CTX_load_verify_locations_ex(WOLFSSL_CTX* ctx, const char* file,
 {
     int ret = WOLFSSL_SUCCESS;
 #ifndef NO_WOLFSSL_DIR
-    int fileRet;
     int successCount = 0;
-    int failCount = 0;
 #endif
     int verify;
 
@@ -8817,6 +8813,8 @@ int wolfSSL_CTX_load_verify_locations_ex(WOLFSSL_CTX* ctx, const char* file,
     if (ret == WOLFSSL_SUCCESS && path) {
 #ifndef NO_WOLFSSL_DIR
         char* name = NULL;
+        int fileRet;
+        int failCount = 0;
     #ifdef WOLFSSL_SMALL_STACK
         ReadDirCtx* readCtx;
         readCtx = (ReadDirCtx*)XMALLOC(sizeof(ReadDirCtx), ctx->heap,
@@ -10173,7 +10171,6 @@ static WOLFSSL_EVP_PKEY* d2iGenericKey(WOLFSSL_EVP_PKEY** out,
         word32  keyIdx = 0;
         DhKey*  key = NULL;
         int ret;
-        int elements;
     #ifdef WOLFSSL_SMALL_STACK
         DhKey* dh = (DhKey*)XMALLOC(sizeof(DhKey), NULL, DYNAMIC_TYPE_DH);
         if (dh == NULL)
@@ -10221,7 +10218,8 @@ static WOLFSSL_EVP_PKEY* d2iGenericKey(WOLFSSL_EVP_PKEY** out,
                 keyIdx = 0;
                 if (wc_DhKeyDecode(mem, &keyIdx, key, (word32)memSz) == 0)
                 {
-                    elements = ELEMENT_P | ELEMENT_G | ELEMENT_Q | ELEMENT_PUB;
+                    int elements = ELEMENT_P | ELEMENT_G | ELEMENT_Q |
+                                   ELEMENT_PUB;
                     if (priv)
                         elements |= ELEMENT_PRV;
                     if(SetDhExternal_ex(pkey->dh, elements)
@@ -10554,7 +10552,6 @@ WOLFSSL_EVP_PKEY* wolfSSL_d2i_PUBKEY(WOLFSSL_EVP_PKEY** out,
 /* helper function to get raw pointer to DER buffer from WOLFSSL_EVP_PKEY */
 static int wolfSSL_EVP_PKEY_get_der(const WOLFSSL_EVP_PKEY* key, unsigned char** der)
 {
-    unsigned char* pt;
     int sz;
     word16 pkcs8HeaderSz;
 
@@ -10568,7 +10565,7 @@ static int wolfSSL_EVP_PKEY_get_der(const WOLFSSL_EVP_PKEY* key, unsigned char**
         pkcs8HeaderSz = key->pkcs8HeaderSz;
     sz = key->pkey_sz - pkcs8HeaderSz;
     if (der) {
-        pt = (unsigned char*)key->pkey.ptr;
+        unsigned char* pt = (unsigned char*)key->pkey.ptr;
         if (*der) {
             /* since this function signature has no size value passed in it is
              * assumed that the user has allocated a large enough buffer */
@@ -15085,7 +15082,7 @@ ClientSession* AddSessionToClientCache(int side, int row, int idx, byte* serverI
                             word16 useTicket)
 {
     int error = -1;
-    word32 clientRow = 0, clientIdx = 0, sessionIDHash = 0;
+    word32 clientRow = 0, clientIdx = 0;
     (void)useTicket;
     if (side == WOLFSSL_CLIENT_END
             && row != INVALID_SESSION_ROW
@@ -15117,7 +15114,8 @@ ClientSession* AddSessionToClientCache(int side, int row, int idx, byte* serverI
                 ClientCache[clientRow].Clients[clientIdx].serverIdx =
                                                                 (word16)idx;
                 if (sessionID != NULL) {
-                    sessionIDHash = HashObject(sessionID, ID_LEN, &error);
+                    word32 sessionIDHash = HashObject(sessionID, ID_LEN,
+                                                      &error);
                     if (error == 0) {
                         ClientCache[clientRow].Clients[clientIdx].sessionIDHash
                             = sessionIDHash;
@@ -15548,9 +15546,6 @@ void AddSession(WOLFSSL* ssl)
     const byte* id = NULL;
     byte idSz = 0;
     WOLFSSL_SESSION* session = ssl->session;
-#ifdef HAVE_EXT_CACHE
-    int cbRet = 0;
-#endif
 
     (void)error;
 
@@ -15663,6 +15658,7 @@ void AddSession(WOLFSSL* ssl)
 
 #ifdef HAVE_EXT_CACHE
     if (error == 0 && ssl->ctx->new_sess_cb != NULL) {
+        int cbRet = 0;
         wolfSSL_SESSION_up_ref(session);
         cbRet = ssl->ctx->new_sess_cb(ssl, session);
         if (cbRet == 0)
@@ -21383,8 +21379,6 @@ WOLFSSL_SESSION* wolfSSL_SESSION_dup(WOLFSSL_SESSION* session)
 
 void wolfSSL_FreeSession(WOLFSSL_CTX* ctx, WOLFSSL_SESSION* session)
 {
-    int isZero;
-
     session = ClientSessionToSession(session);
     if (session == NULL)
         return;
@@ -21393,6 +21387,7 @@ void wolfSSL_FreeSession(WOLFSSL_CTX* ctx, WOLFSSL_SESSION* session)
 
     if (session->ref.count > 0) {
         int ret;
+        int isZero;
         wolfSSL_RefDec(&session->ref, &isZero, &ret);
         (void)ret;
         if (!isZero) {
@@ -21922,7 +21917,6 @@ int wolfSSL_CIPHER_get_auth_nid(const WOLFSSL_CIPHER* cipher)
         {NULL,      NID_undef}
     };
 
-    const struct authnid* sa;
     const char* authStr;
     char n[MAX_SEGMENTS][MAX_SEGMENT_SZ] = {{0}};
 
@@ -21934,6 +21928,7 @@ int wolfSSL_CIPHER_get_auth_nid(const WOLFSSL_CIPHER* cipher)
     authStr = GetCipherAuthStr(n);
 
     if (authStr != NULL) {
+        const struct authnid* sa;
         for(sa = authnid_tbl; sa->alg_name != NULL; sa++) {
             if (XSTRCMP(sa->alg_name, authStr) == 0) {
                 return sa->nid;
@@ -21967,7 +21962,6 @@ int wolfSSL_CIPHER_get_cipher_nid(const WOLFSSL_CIPHER* cipher)
         {NULL,                      NID_undef}
     };
 
-    const struct ciphernid* c;
     const char* encStr;
     char n[MAX_SEGMENTS][MAX_SEGMENT_SZ] = {{0}};
 
@@ -21981,6 +21975,7 @@ int wolfSSL_CIPHER_get_cipher_nid(const WOLFSSL_CIPHER* cipher)
     encStr = GetCipherEncStr(n);
 
     if (encStr != NULL) {
+        const struct ciphernid* c;
         for(c = ciphernid_tbl; c->alg_name != NULL; c++) {
             if (XSTRCMP(c->alg_name, encStr) == 0) {
                 return c->nid;
@@ -22006,7 +22001,6 @@ int wolfSSL_CIPHER_get_digest_nid(const WOLFSSL_CIPHER* cipher)
         {NULL,      NID_undef}
     };
 
-    const struct macnid* mc;
     const char* name;
     const char* macStr;
     char n[MAX_SEGMENTS][MAX_SEGMENT_SZ] = {{0}};
@@ -22027,6 +22021,7 @@ int wolfSSL_CIPHER_get_digest_nid(const WOLFSSL_CIPHER* cipher)
     macStr = GetCipherMacStr(n);
 
     if (macStr != NULL) {
+        const struct macnid* mc;
         for(mc = macnid_tbl; mc->alg_name != NULL; mc++) {
             if (XSTRCMP(mc->alg_name, macStr) == 0) {
                 return mc->nid;
@@ -22057,7 +22052,6 @@ int wolfSSL_CIPHER_get_kx_nid(const WOLFSSL_CIPHER* cipher)
         {NULL,        NID_undef}
     };
 
-    const struct kxnid* k;
     const char* keaStr;
     char n[MAX_SEGMENTS][MAX_SEGMENT_SZ] = {{0}};
 
@@ -22076,6 +22070,7 @@ int wolfSSL_CIPHER_get_kx_nid(const WOLFSSL_CIPHER* cipher)
     keaStr = GetCipherKeaStr(n);
 
     if (keaStr != NULL) {
+        const struct kxnid* k;
         for(k = kxnid_table; k->name != NULL; k++) {
             if (XSTRCMP(k->name, keaStr) == 0) {
                 return k->nid;
@@ -22629,7 +22624,7 @@ int wolfSSL_i2d_PublicKey(const WOLFSSL_EVP_PKEY *key, unsigned char **der)
     word32 inOutIdx = 0;
 #endif
     word32 pub_derSz = 0;
-    int ret = 0;
+    int ret;
     int key_type = 0;
 
     if (key == NULL) {
@@ -22638,7 +22633,7 @@ int wolfSSL_i2d_PublicKey(const WOLFSSL_EVP_PKEY *key, unsigned char **der)
 
     key_type = key->type;
     if ((key_type != EVP_PKEY_EC) && (key_type != EVP_PKEY_RSA)) {
-        ret = WOLFSSL_FATAL_ERROR;
+        return WOLFSSL_FATAL_ERROR;
     }
 
 #ifndef NO_RSA
@@ -22654,20 +22649,18 @@ int wolfSSL_i2d_PublicKey(const WOLFSSL_EVP_PKEY *key, unsigned char **der)
     /* We need to get the DER, then convert it to a public key. But what we get
      * might be a buffered private key so we need to decode it and then encode
      * the public part. */
-    if (ret == 0) {
-        ret = wolfSSL_EVP_PKEY_get_der(key, &local_der);
-        if (ret <= 0) {
-            /* In this case, there was no buffered DER at all. This could be the
-             * case where the key that was passed in was generated. So now we
-             * have to create the local DER. */
-            local_derSz = wolfSSL_i2d_ECPrivateKey(key->ecc, &local_der);
-            if (local_derSz == 0) {
-                ret = WOLFSSL_FATAL_ERROR;
-            }
-        } else {
-            local_derSz = ret;
-            ret = 0;
+    ret = wolfSSL_EVP_PKEY_get_der(key, &local_der);
+    if (ret <= 0) {
+        /* In this case, there was no buffered DER at all. This could be the
+         * case where the key that was passed in was generated. So now we
+         * have to create the local DER. */
+        local_derSz = wolfSSL_i2d_ECPrivateKey(key->ecc, &local_der);
+        if (local_derSz == 0) {
+            ret = WOLFSSL_FATAL_ERROR;
         }
+    } else {
+        local_derSz = ret;
+        ret = 0;
     }
 
     if (ret == 0) {
@@ -22692,7 +22685,7 @@ int wolfSSL_i2d_PublicKey(const WOLFSSL_EVP_PKEY *key, unsigned char **der)
 
     if (ret == 0) {
         pub_derSz = wc_EccPublicKeyDerSize(eccKey, 0);
-        if (pub_derSz <= 0) {
+        if ((int)pub_derSz <= 0) {
             ret = WOLFSSL_FAILURE;
         }
     }
@@ -22708,7 +22701,7 @@ int wolfSSL_i2d_PublicKey(const WOLFSSL_EVP_PKEY *key, unsigned char **der)
 
     if (ret == 0) {
         pub_derSz = wc_EccPublicKeyToDer(eccKey, pub_der, pub_derSz, 0);
-        if (pub_derSz <= 0) {
+        if ((int)pub_derSz <= 0) {
             ret = WOLFSSL_FATAL_ERROR;
         }
     }
@@ -23305,13 +23298,12 @@ const char* wolfSSL_state_string_long(const WOLFSSL* ssl)
  */
 int wolfSSL_PEM_def_callback(char* name, int num, int w, void* key)
 {
-    int sz;
     (void)w;
     WOLFSSL_ENTER("wolfSSL_PEM_def_callback");
 
     /* We assume that the user passes a default password as userdata */
     if (key) {
-        sz = (int)XSTRLEN((const char*)key);
+        int sz = (int)XSTRLEN((const char*)key);
         sz = (sz > num) ? num : sz;
         XMEMCPY(name, key, sz);
         return sz;
@@ -23962,11 +23954,9 @@ long wolfSSL_CTX_sess_number(WOLFSSL_CTX* ctx)
 long wolfSSL_CTX_add_extra_chain_cert(WOLFSSL_CTX* ctx, WOLFSSL_X509* x509)
 {
     byte* chain = NULL;
-    long  chainSz = 0;
     int   derSz;
     const byte* der;
     int   ret;
-    int   idx = 0;
     DerBuffer *derBuffer = NULL;
 
     WOLFSSL_ENTER("wolfSSL_CTX_add_extra_chain_cert");
@@ -23994,6 +23984,9 @@ long wolfSSL_CTX_add_extra_chain_cert(WOLFSSL_CTX* ctx, WOLFSSL_X509* x509)
         }
     }
     else {
+        long chainSz = 0;
+        int  idx = 0;
+
         /* TODO: Do this elsewhere. */
         ret = AllocDer(&derBuffer, derSz, CERT_TYPE, ctx->heap);
         if (ret != 0) {
@@ -25258,7 +25251,6 @@ int wolfSSL_i2d_SSL_SESSION(WOLFSSL_SESSION* sess, unsigned char** p)
 #ifdef SESSION_CERTS
     int i;
 #endif
-    unsigned char *data;
 
     WOLFSSL_ENTER("wolfSSL_i2d_SSL_SESSION");
 
@@ -25327,6 +25319,8 @@ int wolfSSL_i2d_SSL_SESSION(WOLFSSL_SESSION* sess, unsigned char** p)
 #endif
 
     if (p != NULL) {
+        unsigned char *data;
+
         if (*p == NULL)
             *p = (unsigned char*)XMALLOC(size, NULL, DYNAMIC_TYPE_OPENSSL);
         if (*p == NULL)
@@ -26633,8 +26627,6 @@ int wolfSSL_HMAC_Init(WOLFSSL_HMAC_CTX* ctx, const void* key, int keylen,
 int wolfSSL_HMAC_Update(WOLFSSL_HMAC_CTX* ctx, const unsigned char* data,
                     int len)
 {
-    int hmac_error = 0;
-
     WOLFSSL_MSG("wolfSSL_HMAC_Update");
 
     if (ctx == NULL) {
@@ -26643,6 +26635,8 @@ int wolfSSL_HMAC_Update(WOLFSSL_HMAC_CTX* ctx, const unsigned char* data,
     }
 
     if (data) {
+        int hmac_error = 0;
+
         WOLFSSL_MSG("updating hmac");
         hmac_error = wc_HmacUpdate(&ctx->hmac, data, (word32)len);
         if (hmac_error < 0){
@@ -27463,7 +27457,6 @@ int wolfSSL_get_signature_nid(WOLFSSL *ssl, int* nid)
 static int populate_groups(int* groups, int max_count, char *list)
 {
     char *end;
-    int len;
     int count = 0;
     const WOLF_EC_NIST_NAME* nist_name;
 
@@ -27472,6 +27465,8 @@ static int populate_groups(int* groups, int max_count, char *list)
     }
 
     for (end = list; ; list = ++end) {
+        int len;
+
         if (count > max_count) {
             WOLFSSL_MSG("Too many curves in list");
             return -1;
@@ -27547,7 +27542,6 @@ WOLFSSL_EVP_PKEY* wolfSSL_PEM_read_bio_PrivateKey(WOLFSSL_BIO* bio,
     WOLFSSL_EVP_PKEY* pkey = NULL;
     DerBuffer*         der = NULL;
     int             keyFormat = 0;
-    int                 type = -1;
 
     WOLFSSL_ENTER("wolfSSL_PEM_read_bio_PrivateKey");
 
@@ -27557,6 +27551,7 @@ WOLFSSL_EVP_PKEY* wolfSSL_PEM_read_bio_PrivateKey(WOLFSSL_BIO* bio,
     if (pem_read_bio_key(bio, cb, pass, PRIVATEKEY_TYPE, &keyFormat, &der)
             >= 0) {
         const unsigned char* ptr = der->buffer;
+        int                  type = -1;
 
         if (keyFormat) {
             /* keyFormat is Key_Sum enum */
@@ -28489,13 +28484,13 @@ void* wolfSSL_GetHKDFExtractCtx(WOLFSSL* ssl)
         WOLFSSL_EVP_PKEY* pkey = NULL;
         DerBuffer*         der = NULL;
         int             keyFormat = 0;
-        int                 type = -1;
 
         WOLFSSL_ENTER("wolfSSL_PEM_read_PrivateKey");
 
         if (pem_read_file_key(fp, cb, pass, PRIVATEKEY_TYPE, &keyFormat,
                                                                    &der) >= 0) {
             const unsigned char* ptr = der->buffer;
+            int                  type = -1;
 
             if (keyFormat) {
                 /* keyFormat is Key_Sum enum */
@@ -28561,7 +28556,6 @@ void* wolfSSL_GetHKDFExtractCtx(WOLFSSL* ssl)
         char* nameStr = NULL;
         int nameLen = 0;
         char* headerStr = NULL;
-        int headerLen;
         int headerFound = 0;
         unsigned char* der = NULL;
         word32 derLen = 0;
@@ -28599,6 +28593,8 @@ void* wolfSSL_GetHKDFExtractCtx(WOLFSSL* ssl)
                 ret = WOLFSSL_FAILURE;
         }
         if (ret == WOLFSSL_SUCCESS) {
+            int headerLen;
+
             XSTRNCPY(nameStr, pem + PEM_BEGIN_SZ, nameLen);
             nameStr[nameLen] = '\0';
 
@@ -29532,7 +29528,7 @@ void* wolfSSL_GetHKDFExtractCtx(WOLFSSL* ssl)
     int wolfSSL_OBJ_ln2nid(const char *ln)
     {
         const WOLFSSL_ObjectInfo *obj_info = wolfssl_object_info;
-        size_t i, lnlen;
+        size_t lnlen;
         WOLFSSL_ENTER("wolfSSL_OBJ_ln2nid");
         if (ln && (lnlen = XSTRLEN(ln)) > 0) {
             /* Accept input like "/commonName=" */
@@ -29541,6 +29537,8 @@ void* wolfSSL_GetHKDFExtractCtx(WOLFSSL* ssl)
                 lnlen--;
             }
             if (lnlen) {
+                size_t i;
+
                 if (ln[lnlen-1] == '=') {
                     lnlen--;
                 }
@@ -30536,10 +30534,7 @@ WOLFSSL_EVP_PKEY* wolfSSL_d2i_PrivateKey_bio(WOLFSSL_BIO* bio,
     unsigned char* mem = NULL;
     int memSz = 0;
     WOLFSSL_EVP_PKEY* key = NULL;
-    int i = 0, j = 0;
     unsigned char* extraBioMem = NULL;
-    int extraBioMemSz = 0;
-    int derLength = 0;
 
     WOLFSSL_ENTER("wolfSSL_d2i_PrivateKey_bio");
 
@@ -30561,6 +30556,9 @@ WOLFSSL_EVP_PKEY* wolfSSL_d2i_PrivateKey_bio(WOLFSSL_BIO* bio,
     }
 
     if (wolfSSL_BIO_read(bio, (unsigned char*)mem, memSz) == memSz) {
+        int extraBioMemSz;
+        int derLength;
+
         /* Determines key type and returns the new private EVP_PKEY object */
         if ((key = wolfSSL_d2i_PrivateKey_EVP(NULL, &mem, (long)memSz)) == NULL) {
             WOLFSSL_MSG("wolfSSL_d2i_PrivateKey_EVP() failure");
@@ -30572,6 +30570,9 @@ WOLFSSL_EVP_PKEY* wolfSSL_d2i_PrivateKey_bio(WOLFSSL_BIO* bio,
         derLength = key->pkey_sz;
         extraBioMemSz = (memSz - derLength);
         if (extraBioMemSz > 0) {
+            int i;
+            int j = 0;
+
             extraBioMem = (unsigned char *)XMALLOC(extraBioMemSz, NULL,
                                                        DYNAMIC_TYPE_TMP_BUFFER);
             if (extraBioMem == NULL) {
@@ -30660,7 +30661,6 @@ static void SESSION_ex_data_cache_update(WOLFSSL_SESSION* session, int idx,
     int i;
     int error = 0;
     SessionRow* sessRow = NULL;
-    WOLFSSL_SESSION* cacheSession = NULL;
     const byte* id;
     byte foundCache = 0;
 
@@ -30690,6 +30690,7 @@ static void SESSION_ex_data_cache_update(WOLFSSL_SESSION* session, int idx,
     }
 
     for (i = 0; i < SESSIONS_PER_ROW && i < sessRow->totalCount; i++) {
+        WOLFSSL_SESSION* cacheSession;
 #ifdef SESSION_CACHE_DYNAMIC_MEM
         cacheSession = sessRow->Sessions[i];
 #else
@@ -34486,10 +34487,8 @@ int wolfSSL_PEM_write_bio_PKCS8PrivateKey(WOLFSSL_BIO* bio,
     byte* pem = NULL;
     int pemSz = 0;
     int type = PKCS8_PRIVATEKEY_TYPE;
-    int algId;
     const byte* curveOid;
     word32 oidSz;
-    int encAlgId = 0;
 
     if (bio == NULL || pkey == NULL)
         return -1;
@@ -34510,6 +34509,7 @@ int wolfSSL_PEM_write_bio_PKCS8PrivateKey(WOLFSSL_BIO* bio,
         WC_RNG rng;
         ret = wc_InitRng(&rng);
         if (ret == 0) {
+            int encAlgId = 0;
         #ifndef NO_DES3
             if (enc == EVP_DES_CBC)
                 encAlgId = DESb;
@@ -34540,6 +34540,7 @@ int wolfSSL_PEM_write_bio_PKCS8PrivateKey(WOLFSSL_BIO* bio,
         type = PKCS8_ENC_PRIVATEKEY_TYPE;
     }
     if (ret == 0 && enc == NULL) {
+        int algId;
         type = PKCS8_PRIVATEKEY_TYPE;
     #ifdef HAVE_ECC
         if (pkey->type == EVP_PKEY_EC) {
@@ -34702,9 +34703,7 @@ WOLFSSL_EVP_PKEY* wolfSSL_d2i_AutoPrivateKey(WOLFSSL_EVP_PKEY** pkey,
     const byte* der = *pp;
     word32 idx = 0;
     int len = 0;
-    word32 end = 0;
     int cnt = 0;
-    int type;
     word32 algId;
     word32 keyLen = (word32)length;
 
@@ -34720,7 +34719,7 @@ WOLFSSL_EVP_PKEY* wolfSSL_d2i_AutoPrivateKey(WOLFSSL_EVP_PKEY** pkey,
      */
     ret = GetSequence(der, &idx, &len, keyLen);
     if (ret >= 0) {
-        end = idx + len;
+        word32 end = idx + len;
         while (ret >= 0 && idx < end) {
             /* Skip type */
             idx++;
@@ -34739,6 +34738,7 @@ WOLFSSL_EVP_PKEY* wolfSSL_d2i_AutoPrivateKey(WOLFSSL_EVP_PKEY** pkey,
     }
 
     if (ret >= 0) {
+        int type;
         /* ECC includes version, private[, curve][, public key] */
         if (cnt >= 2 && cnt <= 4)
             type = EVP_PKEY_EC;
@@ -35992,7 +35992,6 @@ int wolfSSL_RAND_bytes(unsigned char* buf, int num)
     WC_RNG  tmpRNG[1];
 #endif
     int initTmpRng = 0;
-    int blockCount = 0;
 #ifdef HAVE_GLOBAL_RNG
     int used_global = 0;
 #endif
@@ -36039,7 +36038,7 @@ int wolfSSL_RAND_bytes(unsigned char* buf, int num)
     }
     if (rng) {
         /* handles size greater than RNG_MAX_BLOCK_LEN */
-        blockCount = num / RNG_MAX_BLOCK_LEN;
+        int blockCount = num / RNG_MAX_BLOCK_LEN;
 
         while (blockCount--) {
             ret = wc_RNG_GenerateBlock(rng, buf, RNG_MAX_BLOCK_LEN);
@@ -38162,13 +38161,14 @@ WC_PKCS12* wolfSSL_PKCS12_create(char* pass, char* name, WOLFSSL_EVP_PKEY* pkey,
     }
 
     if (ca != NULL) {
-        WC_DerCertList* cur;
         unsigned long numCerts = ca->num;
-        byte* curDer;
-        int   curDerSz = 0;
         WOLFSSL_STACK* sk = ca;
 
         while (numCerts > 0 && sk != NULL) {
+            byte* curDer;
+            WC_DerCertList* cur;
+            int   curDerSz = 0;
+
             cur = (WC_DerCertList*)XMALLOC(sizeof(WC_DerCertList), NULL,
                     DYNAMIC_TYPE_PKCS);
             if (cur == NULL) {
