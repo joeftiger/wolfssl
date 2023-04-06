@@ -8706,7 +8706,10 @@ int ProcessFile(WOLFSSL_CTX* ctx, const char* fname, int format, int type,
         return WOLFSSL_BAD_FILE;
     }
     sz = XFTELL(file);
-    XREWIND(file);
+    if (XFSEEK(file, 0, XSEEK_SET) != 0) {
+        XFCLOSE(file);
+        return WOLFSSL_BAD_FILE;
+    }
 
     if (sz > MAX_WOLFSSL_FILE_SIZE || sz <= 0) {
         WOLFSSL_MSG("ProcessFile file size error");
@@ -9179,7 +9182,10 @@ int wolfSSL_CertManagerVerify(WOLFSSL_CERT_MANAGER* cm, const char* fname,
         return WOLFSSL_BAD_FILE;
     }
     sz = XFTELL(file);
-    XREWIND(file);
+    if(XFSEEK(file, 0, XSEEK_SET) != 0) {
+        XFCLOSE(file);
+        return WOLFSSL_BAD_FILE;
+    }
 
     if (sz > MAX_WOLFSSL_FILE_SIZE || sz <= 0) {
         WOLFSSL_MSG("CertManagerVerify file size error");
@@ -9641,7 +9647,10 @@ static int wolfSSL_SetTmpDH_file_wrapper(WOLFSSL_CTX* ctx, WOLFSSL* ssl,
         return WOLFSSL_BAD_FILE;
     }
     sz = XFTELL(file);
-    XREWIND(file);
+    if(XFSEEK(file, 0, XSEEK_SET) != 0) {
+        XFCLOSE(file);
+        return WOLFSSL_BAD_FILE;
+    }
 
     if (sz > MAX_WOLFSSL_FILE_SIZE || sz <= 0) {
         WOLFSSL_MSG("SetTmpDH file size error");
@@ -12322,7 +12331,10 @@ int CM_RestoreCertCache(WOLFSSL_CERT_MANAGER* cm, const char* fname)
         return WOLFSSL_BAD_FILE;
     }
     memSz = (int)XFTELL(file);
-    XREWIND(file);
+    if(XFSEEK(file, 0, XSEEK_SET) != 0) {
+        XFCLOSE(file);
+        return WOLFSSL_BAD_FILE;
+    }
 
     if (memSz > MAX_WOLFSSL_FILE_SIZE || memSz <= 0) {
         WOLFSSL_MSG("CM_RestoreCertCache file size error");
@@ -25823,7 +25835,10 @@ int wolfSSL_cmp_peer_cert_to_file(WOLFSSL* ssl, const char *fname)
             return WOLFSSL_BAD_FILE;
         }
         sz = XFTELL(file);
-        XREWIND(file);
+        if (XFSEEK(file, 0, XSEEK_SET) != 0) {
+            XFCLOSE(file);
+            return WOLFSSL_BAD_FILE;
+        }
 
         if (sz > MAX_WOLFSSL_FILE_SIZE || sz < 0) {
             WOLFSSL_MSG("cmp_peer_cert_to_file size error");
