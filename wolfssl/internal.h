@@ -2740,6 +2740,33 @@ WOLFSSL_LOCAL int TLSX_Append(TLSX** list, TLSX_Type type,
 
 #endif /* HAVE_TLS_EXTENSIONS */
 
+#ifdef WOLFSSL_REMOTE_ATTESTATION
+
+/* Evidence Type */
+typedef struct EV_TYPE {
+    word8 length;           /* Evidence Type Description Length */
+    void *description;      /* Evidence Type Description */
+    struct EV_TYPE *next;   /* List Behaviour */
+} EV_TYPE;
+
+/* Evidence Request from client */
+typedef struct EV_REQUEST_CLIENT {
+    word32 nonce;       /* Nonce for Evidence Generation */
+    word8 num_types;    /* Number of Evidence Types */
+    EV_TYPE *types;     /* Evidence Type List */
+} EV_REQUEST_CLIENT;
+
+/*
+ * Evidence Request answer from server.
+ */
+typedef struct EV_REQUEST_SERVER {
+    EV_TYPE type;   /* Evidence Type chosen from client-supported types */
+    word16 length;  /* Evidence Data Length */
+    void *data;     /* Evidence Data */
+} EV_REQUEST_SERVER;
+
+#endif /* WOLFSSL_REMOTE_ATTESTATION */
+
 /** Server Name Indication - RFC 6066 (session 3) */
 #ifdef HAVE_SNI
 
