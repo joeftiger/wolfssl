@@ -353,6 +353,16 @@ if(NOT WOLFSSL_RNG)
     list(APPEND WOLFSSL_DEFINITIONS "-DWC_NO_RNG")
 endif()
 
+# Remote Attestation
+# TODO: Make disabled by default. This is for testing only for now.
+add_option("WOLFSSL_REMOTE_ATTESTATION"
+        "Enable wolfSSL remote attestation (default: enabled)"
+        "yes" "yes;no")
+
+if(WOLFSSL_REMOTE_ATTESTATION)
+    list(APPEND WOLFSSL_DEFINITIONS "-DWOLFSSL_REMOTE_ATTESTATION")
+endif()
+
 # TODO: - DTLS-SCTP
 #       - DTLS multicast
 #       - OpenSSH
