@@ -3666,6 +3666,37 @@ WOLFSSL_API void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl);
 
 /* TLS Extensions */
 
+#ifdef WOLFSSL_REMOTE_ATTESTATION
+// TODO: WIP definitions
+
+/*
+ * Evidence Request extension.
+ *
+ * For 'client', the data should be:
+ * 4 bytes  Nonce for Evidence Generation
+ * 1 byte   Number of Evidences supported (e.g. 2)
+ *   1 byte     Type Description Length [1st evidence]
+ *   ? bytes    Type Description
+ *   1 byte     Type Description Length [2nd evidence]
+ *   ? bytes    Type Description
+ *
+ * For 'server', the data should be
+ * 1 byte   Type Description Length [e.g. 1st evidence]
+ * ? bytes  Type Description
+ * 2 bytes  Evidence Data Length
+ * ? bytes  Evidence Data
+ */
+WOLFSSL_API int wolfSSL_EvidenceRequest(WOLFSSL *ssl, const void *ev);
+
+/*
+ * Returns stored data from the Evidence Request Extension.
+ * - 'client': data to send to 'server'
+ * - 'server': data received from 'client'
+ */
+WOLFSSL_API void *wolfSSL_GetEvidence(WOLFSSL *ssl);
+
+#endif /* WOLFSSL_REMOTE_ATTESTATION */
+
 /* Server Name Indication */
 #ifdef HAVE_SNI
 
