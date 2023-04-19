@@ -1860,6 +1860,84 @@ int TLSX_ALPN_GetRequest(TLSX* extensions, void** data, word16 *dataSz)
 
 #endif /* HAVE_ALPN */
 
+/* ****************************************************************************/
+/* Remote Attestation                                                         */
+/* ****************************************************************************/
+
+/*
+ * Writes the Evidence Type data into the output buffer.
+ * Assumes that the output buffer is big enough to hold data.
+ *
+ * type     The evidence type.
+ * output   The buffer to write into. Advanced by number of bytes written.
+ * pSz      Incremented by the number of bytes written into the buffer.
+ */
+static void TLSX_EvidenceType_Write(EV_TYPE *type, byte *output, word16 *pSz) {
+    *output = type->length;
+    output += OPAQUE8_LEN;
+    *pSz += OPAQUE8_LEN;
+
+    XMEMCPY(output, type->description, type->length);
+    output += type->length;
+    *pSz += type->length;
+}
+
+/*
+ * Writes the Evidence Request extension data into the output buffer.
+ * Assumes that the output buffer is big enough to hold data.
+ * In messages: ClientHello and ServerHello.
+ *
+ * data     The extension data to write
+ * output   The buffer to write into.
+ * msgType  The type of the message this extension is being written into.
+ * pSz      Incremented by the number of bytes written into the buffer.
+ * returns  Either success (0) or sanity error (SANITY_MSG_E)
+ */
+static int TLSX_EvidenceRequest_Write(void *data, byte *output, byte msgType, word16 *pSz) {
+    if (msgType == client_hello) {
+        EV_REQUEST_CLIENT *req = (EV_REQUEST_CLIENT *) data;
+
+        c32toa(req->nonce, output);
+        output += OPAQUE32_LEN;
+        *pSz += OPAQUE32_LEN;
+
+        *output = req->num_types;
+        output += OPAQUE8_LEN;
+        *pSz += OPAQUE8_LEN;
+
+        EV_TYPE *type = type = req->types;
+        // at least one type must be present.
+        if (type == NULL) {
+            WOLFSSL_ERROR_VERBOSE(SANITY_MSG_E);
+            return SANITY_MSG_E;
+        }
+
+        // write the list of supported evidence types into the buffer
+        do {
+            TLSX_EvidenceType_Write(type, output, pSz);
+        } while ((type = type->next));
+    } else if (msgType == server_hello) {
+        EV_REQUEST_SERVER *req = (EV_REQUEST_SERVER *) data;
+
+        TLSX_EvidenceType_Write(&req->type, output, pSz);
+
+        c16toa(req->length, output);
+        output += OPAQUE16_LEN;
+        *pSz += OPAQUE16_LEN;
+
+        XMEMCPY(output, req->data, req->length);
+        output += req->length;
+        *pSz += req->length;
+    } else {
+        WOLFSSL_ERROR_VERBOSE(SANITY_MSG_E);
+        return SANITY_MSG_E;
+    }
+
+    return 0;
+}
+
+#define EV_WRITE TLSX_EvidenceRequest_Write
+
 /******************************************************************************/
 /* Server Name Indication                                                     */
 /******************************************************************************/
@@ -11601,6 +11679,12 @@ static int TLSX_Write(TLSX* list, byte* output, byte* semaphore,
                 WOLFSSL_MSG("Key Share extension to write");
                 offset += KS_WRITE((KeyShareEntry*)extension->data,
                                                       output + offset, msgType);
+                break;
+#endif
+#ifdef WOLFSSL_REMOTE_ATTESTATION
+            case TLSX_EVIDENCE_REQUEST:
+                WOLFSSL_MSG("Evidence Request extension to write");
+                ret = EV_WRITE(extension->data, output + offset, msgType, &offset);
                 break;
 #endif
 #ifdef WOLFSSL_SRTP
