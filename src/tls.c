@@ -13667,6 +13667,21 @@ int TLSX_Parse(WOLFSSL* ssl, const byte* input, word16 length, byte msgType,
                 ret = ECH_PARSE(ssl, input + offset, size, msgType);
                 break;
 #endif
+#ifdef WOLFSSL_REMOTE_ATTESTATION
+            case TLSX_EVIDENCE_REQUEST:
+                WOLFSSL_MSG("Evidence Request extension received");
+#ifdef WOLFSSL_DEBUG_TLS
+                WOLFSSL_BUFFER(input + offset, size);
+#endif
+                if (msgType != client_hello && msgType != server_hello) {
+                    WOLFSSL_ERROR_VERBOSE(EXT_NOT_ALLOWED);
+                    return EXT_NOT_ALLOWED;
+                }
+
+                // TODO: functions for parsing/writing tlsx data
+
+                break;
+#endif /* WOLFSSL_REMOTE_ATTESTATION */
             default:
                 WOLFSSL_MSG("Unknown TLS extension type");
         }
@@ -13674,6 +13689,7 @@ int TLSX_Parse(WOLFSSL* ssl, const byte* input, word16 length, byte msgType,
         /* offset should be updated here! */
         offset += size;
     }
+
 
 #ifdef HAVE_EXTENDED_MASTER
     if (IsAtLeastTLSv1_3(ssl->version) && msgType == hello_retry_request) {
