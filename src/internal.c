@@ -18734,6 +18734,12 @@ const char* AlertTypeToString(int type)
                 return bad_certificate_status_response_str;
             }
 
+        case unsupported_evidence:
+        {
+            static const char unsupported_evidence_str[] = "unsupported_evidence";
+            return unsupported_evidence_str;
+        }
+
         case no_application_protocol:
             {
                 static const char no_application_protocol_str[] =
