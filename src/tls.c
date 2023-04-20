@@ -1860,9 +1860,11 @@ int TLSX_ALPN_GetRequest(TLSX* extensions, void** data, word16 *dataSz)
 
 #endif /* HAVE_ALPN */
 
-/* ****************************************************************************/
+/******************************************************************************/
 /* Remote Attestation                                                         */
-/* ****************************************************************************/
+/******************************************************************************/
+
+#ifdef WOLFSSL_REMOTE_ATTESTATION
 
 /*
  * Writes the Evidence Type data into the output buffer.
@@ -1929,6 +1931,8 @@ static int TLSX_EvidenceRequest_Write(const void *data, byte *output, byte msgTy
 }
 
 #define EV_WRITE TLSX_EvidenceRequest_Write
+
+#endif /* WOLFSSL_REMOTE_ATTESTATION */
 
 /******************************************************************************/
 /* Server Name Indication                                                     */
