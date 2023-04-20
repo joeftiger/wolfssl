@@ -1887,13 +1887,13 @@ static void TLSX_EvidenceType_Write(EV_TYPE *type, byte *output, word16 *pSz) {
  * Assumes that the output buffer is big enough to hold data.
  * In messages: ClientHello and ServerHello.
  *
- * data     The extension data to write
+ * data     The extension data to write.
  * output   The buffer to write into.
  * msgType  The type of the message this extension is being written into.
  * pSz      Incremented by the number of bytes written into the buffer.
  * returns  Either success (0) or sanity error (SANITY_MSG_E)
  */
-static int TLSX_EvidenceRequest_Write(void *data, byte *output, byte msgType, word16 *pSz) {
+static int TLSX_EvidenceRequest_Write(const void *data, byte *output, byte msgType, word16 *pSz) {
     if (msgType == client_hello) {
         EV_REQUEST_CLIENT *req = (EV_REQUEST_CLIENT *) data;
 
@@ -1905,17 +1905,9 @@ static int TLSX_EvidenceRequest_Write(void *data, byte *output, byte msgType, wo
         output += OPAQUE8_LEN;
         *pSz += OPAQUE8_LEN;
 
-        EV_TYPE *type = type = req->types;
-        // at least one type must be present.
-        if (type == NULL) {
-            WOLFSSL_ERROR_VERBOSE(SANITY_MSG_E);
-            return SANITY_MSG_E;
+        for (int i = 0; i < req->num_types; i++) {
+            TLSX_EvidenceType_Write(&req->types[i], output, pSz);
         }
-
-        // write the list of supported evidence types into the buffer
-        do {
-            TLSX_EvidenceType_Write(type, output, pSz);
-        } while ((type = type->next));
     } else if (msgType == server_hello) {
         EV_REQUEST_SERVER *req = (EV_REQUEST_SERVER *) data;
 

@@ -2746,7 +2746,6 @@ WOLFSSL_LOCAL int TLSX_Append(TLSX** list, TLSX_Type type,
 typedef struct EV_TYPE {
     word8 length;           /* Evidence Type Description Length */
     void *description;      /* Evidence Type Description */
-    struct EV_TYPE *next;   /* List Behaviour */
 } EV_TYPE;
 
 /* Evidence Request from client */
