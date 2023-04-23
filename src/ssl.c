@@ -3455,6 +3455,52 @@ void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl)
 }
 
 
+#ifdef WOLFSSL_REMOTE_ATTESTATION
+
+int wolfSSL_EvidenceRequest(WOLFSSL *ssl, const void *ev) {
+    int ret = TLSX_Push(&ssl->extensions, TLSX_EVIDENCE_REQUEST, ev, ssl->heap);
+    if (ret != 0) {
+        return ret;
+    }
+
+    if (wolfSSL_is_server(ssl)) {
+        // guaranteed to not be NULL as we just pushed it.
+        TLSX *ext = TLSX_Find(ssl->extensions, TLSX_EVIDENCE_REQUEST);
+        ext->resp = 1;
+    }
+
+    return ret;
+}
+
+/*void *wolfSSL_GetEvidence(WOLFSSL *ssl) {
+    TLSX *ext = TLSX_Find(ssl->extensions, TLSX_EVIDENCE_REQUEST);
+    if (ext == NULL) {
+        return NULL;
+    } else {
+        return ext->data;
+    }
+}*/
+
+int wolfSSL_SetEvidenceVerifier(WOLFSSL *ssl, int (*evVerifier)(const void *ev)) {
+    if (wolfSSL_is_server(ssl)) {
+        return SIDE_ERROR;
+    }
+
+    ssl->evidenceVerifier = evVerifier;
+    return 0;
+}
+
+int wolfSSL_SetEvidenceGenerator(WOLFSSL *ssl, int (*evGen)(const void *req)) {
+    if (!wolfSSL_is_server(ssl)) {
+        return SIDE_ERROR;
+    }
+
+    ssl->evidenceGenerator = evGen;
+    return 0;
+}
+
+#endif /* WOLFSSL_REMOTE_ATTESTATION */
+
 #ifdef HAVE_SNI
 
 WOLFSSL_ABI

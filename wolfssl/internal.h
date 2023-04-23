@@ -5525,6 +5525,10 @@ struct WOLFSSL {
 #if defined(WOLFSSL_TLS13) && defined(HAVE_ECH)
     WOLFSSL_EchConfig* echConfigs;
 #endif
+#ifdef WOLFSSL_REMOTE_ATTESTATION
+    int (*evidenceVerifier)(const void *ev);
+    int (*evidenceGenerator)(const void *req);
+#endif /* WOLFSSL_REMOTE_ATTESTATION */
 };
 
 /*
