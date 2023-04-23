@@ -1930,6 +1930,26 @@ static int TLSX_EvidenceRequest_Write(const void *data, byte *output, byte msgTy
     return 0;
 }
 
+/*
+ * Creates a new Evidence Request from Server object.
+ */
+static EV_REQUEST_SERVER *TLSX_EvidenceRequest_NewServer(const EV_TYPE *type, word16 length, const void *data, void *heap) {
+    EV_REQUEST_SERVER *req = (EV_REQUEST_SERVER *)XMALLOC(sizeof(EV_REQUEST_SERVER), heap, DYNAMIC_TYPE_TLSX);
+
+    (void)heap;
+
+    if (req) {
+        req->type.length = type->length;
+        req->type.description = (void *) XMALLOC(req->type.length, heap, DYNAMIC_TYPE_TLSX);
+        XMEMCPY(req->type.description, type->description, type->length);
+
+        req->length = length;
+        XMEMCPY(req->data, data, length);
+    }
+
+    return req;
+}
+
 #define EV_WRITE TLSX_EvidenceRequest_Write
 
 #endif /* WOLFSSL_REMOTE_ATTESTATION */
