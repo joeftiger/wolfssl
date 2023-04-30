@@ -353,6 +353,16 @@ if(NOT WOLFSSL_RNG)
     list(APPEND WOLFSSL_DEFINITIONS "-DWC_NO_RNG")
 endif()
 
+# Keying Material Exporter. Used by Remote Attestation
+# TODO: Make disabled by default. This is for testing only for now.
+add_option("WOLFSSL_KEYING_MATERIAL"
+        "Enable wolfSSL keying material export (default: enabled)"
+        "yes" "yes;no")
+
+if(WOLFSSL_KEYING_MATERIAL)
+    list(APPEND WOLFSSL_DEFINITIONS "-DHAVE_KEYING_MATERIAL")
+endif()
+
 # Remote Attestation
 # TODO: Make disabled by default. This is for testing only for now.
 add_option("WOLFSSL_REMOTE_ATTESTATION"
@@ -360,6 +370,12 @@ add_option("WOLFSSL_REMOTE_ATTESTATION"
         "yes" "yes;no")
 
 if(WOLFSSL_REMOTE_ATTESTATION)
+    if(NOT WOLFSSL_TLS13)
+        message(FATAL_ERROR "Remote Attestation supported only for TLSv1.3")
+    endif()
+    if(NOT WOLFSSL_KEYING_MATERIAL)
+        message(FATAL_ERROR "Remote Attestation supported only with Keying Material Exporter")
+    endif()
     list(APPEND WOLFSSL_DEFINITIONS "-DWOLFSSL_REMOTE_ATTESTATION")
 endif()
 
