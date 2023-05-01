@@ -1866,13 +1866,13 @@ int TLSX_ALPN_GetRequest(TLSX* extensions, void** data, word16 *dataSz)
 
 #ifdef WOLFSSL_REMOTE_ATTESTATION
 
-/*
+/**
  * Writes the Evidence Type data into the output buffer.
  * Assumes that the output buffer is big enough to hold data.
  *
- * type     The evidence type.
- * output   The buffer to write into. Advanced by number of bytes written.
- * pSz      Incremented by the number of bytes written into the buffer.
+ * @param type      The evidence type.
+ * @param output    The buffer to write into. Advanced by number of bytes written.
+ * @param pSz       Incremented by the number of bytes written into the buffer.
  */
 static void TLSX_EvidenceType_Write(EV_TYPE *type, byte *output, word16 *pSz) {
     *output = type->length;
@@ -1884,16 +1884,16 @@ static void TLSX_EvidenceType_Write(EV_TYPE *type, byte *output, word16 *pSz) {
     *pSz += type->length;
 }
 
-/*
+/**
  * Writes the Evidence Request extension data into the output buffer.
  * Assumes that the output buffer is big enough to hold data.
  * In messages: ClientHello and ServerHello.
  *
- * data     The extension data to write.
- * output   The buffer to write into.
- * msgType  The type of the message this extension is being written into.
- * pSz      Incremented by the number of bytes written into the buffer.
- * returns  Either success (0) or sanity error (SANITY_MSG_E)
+ * @param data      The extension data to write.
+ * @param output    The buffer to write into.
+ * @param msgType   The type of the message this extension is being written into.
+ * @param pSz       Incremented by the number of bytes written into the buffer.
+ * @return  Either success (0) or sanity error (SANITY_MSG_E)
  */
 static int TLSX_EvidenceRequest_Write(const void *data, byte *output, byte msgType, word16 *pSz) {
     if (msgType == client_hello) {
@@ -1930,7 +1930,7 @@ static int TLSX_EvidenceRequest_Write(const void *data, byte *output, byte msgTy
     return 0;
 }
 
-/*
+/**
  * Creates a new Evidence Request from Server object.
  */
 static EV_REQUEST_SERVER *TLSX_EvidenceRequest_NewServer(const EV_TYPE *type, word16 length, const void *data, void *heap) {
@@ -13767,6 +13767,7 @@ int TLSX_Parse(WOLFSSL* ssl, const byte* input, word16 length, byte msgType,
                 ret = ECH_PARSE(ssl, input + offset, size, msgType);
                 break;
 #endif
+
 #ifdef WOLFSSL_REMOTE_ATTESTATION
             case TLSX_EVIDENCE_REQUEST:
                 WOLFSSL_MSG("Evidence Request extension received");

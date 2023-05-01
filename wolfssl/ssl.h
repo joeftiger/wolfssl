@@ -3698,31 +3698,25 @@ WOLFSSL_API int wolfSSL_EvidenceRequest(WOLFSSL *ssl, const void *ev);
 // TODO: What about the data the server sent to the client?
 // WOLFSSL_API void *wolfSSL_GetEvidence(WOLFSSL *ssl);
 
-/*
+/**
  * Sets the callback for evidence verification on 'client' side.
  *
- * ARGUMENTS:
- * ssl          The SSL session
- * evVerifier   The evidence verifier. Takes generated evidence from server as parameter.
+ * @param ssl           The SSL session
+ * @param evVerifier    The evidence verifier. Takes generated evidence from server as parameter.
  *
- * RETURNS:
- * 'client': 0
- * 'server': SIDE_ERROR
+ * @return  0 if client and SIDE_ERROR if server
  */
 WOLFSSL_API int wolfSSL_SetEvidenceVerifier(WOLFSSL *ssl, int (*evVerifier)(const void *ev));
 
-/*
+/**
  * Sets the callback for evidence generation on 'server' side.
  *
- * ARGUMENTS:
- * ssl      The SSL session
- * evGen    The evidence generator. Takes an evidence request as parameter.
+ * @param ssl   The SSL session
+ * @param evGen The evidence generator. Takes an evidence request as parameter.
  *
- * RETURNS:
- * 'client': SIDE_ERROR
- * 'server': 0
+ * @return  0 if server and SIDE_ERROR if client
  */
-WOLFSSL_API int wolfSSL_SetEvidenceGenerator(WOLFSSL *ssl, int (*evGen)(const void *req));
+WOLFSSL_API int wolfSSL_SetEvidenceGenerator(WOLFSSL *ssl, void *(*evGen)(const void *req));
 
 #endif /* WOLFSSL_REMOTE_ATTESTATION */
 
