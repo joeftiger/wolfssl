@@ -20,6 +20,7 @@
  */
 
 
+#include "wolfssl/wolfcrypt/error-crypt.h"
 #ifdef HAVE_CONFIG_H
     #include <config.h>
 #endif
@@ -3481,21 +3482,27 @@ int wolfSSL_EvidenceRequest(WOLFSSL *ssl, const void *ev) {
     }
 }*/
 
-int wolfSSL_SetEvidenceVerifier(WOLFSSL *ssl, int (*evVerifier)(const void *ev)) {
+int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(const void *att, const byte *c, word16 cLen)) {
+    if (ssl == NULL || verifyAtt == NULL) {
+        return BAD_FUNC_ARG;
+    }
     if (wolfSSL_is_server(ssl)) {
         return SIDE_ERROR;
     }
 
-    ssl->evidenceVerifier = evVerifier;
+    ssl->verifyAttestation = verifyAtt;
     return 0;
 }
 
-int wolfSSL_SetEvidenceGenerator(WOLFSSL *ssl, int (*evGen)(const void *req)) {
+int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, int (*genAtt)(const void *req, const byte *c, word16 cLen, byte *output)) {
+    if (ssl == NULL || genAtt == NULL) {
+        return BAD_FUNC_ARG;
+    }
     if (!wolfSSL_is_server(ssl)) {
         return SIDE_ERROR;
     }
 
-    ssl->evidenceGenerator = evGen;
+    ssl->generateAttestation = genAtt;
     return 0;
 }
 

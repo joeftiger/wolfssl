@@ -5526,8 +5526,24 @@ struct WOLFSSL {
     WOLFSSL_EchConfig* echConfigs;
 #endif
 #ifdef WOLFSSL_REMOTE_ATTESTATION
-    int (*evidenceVerifier)(const void *ev);
-    int (*evidenceGenerator)(const void *req);
+    /** For attestation verification.
+     *
+     * @param att   the attestation data
+     * @param c     the challenge
+     * @param cLen  the challenge length
+     * @return 0 on success
+     */
+    int (*verifyAttestation)(const void *att, const byte *c, word16 cLen);
+    /**
+     * For attestation generation.
+     *
+     * @param req       the attestation request
+     * @param c         the challenge
+     * @param cLen      the challenge length
+     * @param output    the output buffer for the generated attestation
+     * @return 0 on success
+     */
+    int (*generateAttestation)(const void *req, const byte *c, word16 cLen, byte *output);
 #endif /* WOLFSSL_REMOTE_ATTESTATION */
 };
 

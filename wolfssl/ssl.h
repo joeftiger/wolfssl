@@ -3699,24 +3699,29 @@ WOLFSSL_API int wolfSSL_EvidenceRequest(WOLFSSL *ssl, const void *ev);
 // WOLFSSL_API void *wolfSSL_GetEvidence(WOLFSSL *ssl);
 
 /**
- * Sets the callback for evidence verification on 'client' side.
+ * Sets the callback for attestation verification on 'client' side.
  *
- * @param ssl           The SSL session
- * @param evVerifier    The evidence verifier. Takes generated evidence from server as parameter.
+ * @param ssl       The SSL session
+ * @param verifyAtt The attestation verify callback.
+ *                  Takes attestation data, a challenge and a challenge length as arguments.
+ *                  Must return 0 on success.
  *
- * @return  0 if client and SIDE_ERROR if server
+ * @return  0 if client, SIDE_ERROR if server, and BAD_FUNC_ARG if any param is NULL.
  */
-WOLFSSL_API int wolfSSL_SetEvidenceVerifier(WOLFSSL *ssl, int (*evVerifier)(const void *ev));
+WOLFSSL_API int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(const void *att, const byte *c, word16 cLen));
 
 /**
- * Sets the callback for evidence generation on 'server' side.
+ * Sets the callback for attestation generation on 'server' side.
  *
- * @param ssl   The SSL session
- * @param evGen The evidence generator. Takes an evidence request as parameter.
+ * @param ssl       The SSL session
+ * @param genAtt    The attestation generator.
+ *                  Takes an attestation request, a challenge, a challenge length and a buffer for generated
+ *                  attestation data as arguments.
+ *                  Must return 0 on success.
  *
- * @return  0 if server and SIDE_ERROR if client
+ * @return  0 if server, SIDE_ERROR if client, and BAD_FUNC_ARG if any param is NULL.
  */
-WOLFSSL_API int wolfSSL_SetEvidenceGenerator(WOLFSSL *ssl, void *(*evGen)(const void *req));
+WOLFSSL_API int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, int (*genAtt)(const void *req, const byte *c, word16 cLen, byte *output));
 
 #endif /* WOLFSSL_REMOTE_ATTESTATION */
 
