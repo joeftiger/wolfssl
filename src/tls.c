@@ -1950,7 +1950,30 @@ static ATT_REQUEST_SERVER *TLSX_AttestationRequest_NewServer(const ATT_TYPE *typ
     return req;
 }
 
+/**
+ * Parses the Attestation Request extension.
+ *
+ * @param ssl       The SSL/TLS object.
+ * @param input     The extension data.
+ * @param length    The length of the extension data.
+ * @param msgType   The type of the message this extension is being parsed from.
+ * @return 0 on success, other values indicate failure.
+ */
+static int TLSX_AttestationRequest_Parse(WOLFSSL *ssl, const byte *input, word16 length, byte msgType) {
+    if (msgType == client_hello) {
+        // TODO: parse request and generate attestation here?
+    } else if (msgType == server_hello) {
+        // TODO: parse and verify attestation
+    } else {
+        WOLFSSL_ERROR_VERBOSE(SANITY_MSG_E);
+        return SANITY_MSG_E;
+    }
+
+    return 0;
+}
+
 #define ATT_WRITE TLSX_AttestationRequest_Write
+#define ATT_PARSE TLSX_AttestationRequest_Parse
 
 #endif /* WOLFSSL_REMOTE_ATTESTATION */
 
@@ -13779,8 +13802,7 @@ int TLSX_Parse(WOLFSSL* ssl, const byte* input, word16 length, byte msgType,
                     return EXT_NOT_ALLOWED;
                 }
 
-                // TODO: functions for parsing/writing tlsx data
-
+                ret = ATT_PARSE(ssl, input + offset, size, msgType);
                 break;
 #endif /* WOLFSSL_REMOTE_ATTESTATION */
             default:
