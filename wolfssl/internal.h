@@ -2609,7 +2609,7 @@ typedef enum {
     #endif
 #endif
 #ifdef WOLFSSL_REMOTE_ATTESTATION
-    TLSX_EVIDENCE_REQUEST           = 0xAA00, /* remote attestation, arbitrary number for now */
+    TLSX_ATTESTATION_REQUEST           = 0xAA00, /* remote attestation, arbitrary number for now */
 #endif
     TLSX_RENEGOTIATION_INFO         = 0xff01,
 #ifdef WOLFSSL_QUIC
@@ -2743,26 +2743,26 @@ WOLFSSL_LOCAL int TLSX_Append(TLSX** list, TLSX_Type type,
 #ifdef WOLFSSL_REMOTE_ATTESTATION
 
 /* Evidence Type */
-typedef struct EV_TYPE {
+typedef struct ATT_TYPE {
     word8 length;           /* Evidence Type Description Length */
     void *description;      /* Evidence Type Description */
-} EV_TYPE;
+} ATT_TYPE;
 
 /* Evidence Request from client */
-typedef struct EV_REQUEST_CLIENT {
+typedef struct ATT_REQUEST_CLIENT {
     word32 nonce;       /* Nonce for Evidence Generation */
     word8 num_types;    /* Number of Evidence Types */
-    EV_TYPE *types;     /* Evidence Type List */
-} EV_REQUEST_CLIENT;
+    ATT_TYPE *types;     /* Evidence Type List */
+} ATT_REQUEST_CLIENT;
 
 /*
  * Evidence Request answer from server.
  */
-typedef struct EV_REQUEST_SERVER {
-    EV_TYPE type;   /* Evidence Type chosen from client-supported types */
+typedef struct ATT_REQUEST_SERVER {
+    ATT_TYPE type;   /* Evidence Type chosen from client-supported types */
     word16 length;  /* Evidence Data Length */
     void *data;     /* Evidence Data */
-} EV_REQUEST_SERVER;
+} ATT_REQUEST_SERVER;
 
 #endif /* WOLFSSL_REMOTE_ATTESTATION */
 

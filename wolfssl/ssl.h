@@ -3670,11 +3670,11 @@ WOLFSSL_API void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl);
 // TODO: WIP definitions
 
 /*
- * Evidence Request extension.
+ * Attestation Request extension.
  *
  * For 'client', the data should be:
- * 4 bytes  Nonce for Evidence Generation
- * 1 byte   Number of Evidences supported (e.g. 2)
+ * 4 bytes  Nonce for Attestation Generation
+ * 1 byte   Number of Attestations supported (e.g. 2)
  *   1 byte     Type Description Length [1st evidence]
  *   ? bytes    Type Description
  *   1 byte     Type Description Length [2nd evidence]
@@ -3683,10 +3683,10 @@ WOLFSSL_API void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl);
  * For 'server', the data should be
  * 1 byte   Type Description Length [e.g. 1st evidence]
  * ? bytes  Type Description
- * 2 bytes  Evidence Data Length
- * ? bytes  Evidence Data
+ * 2 bytes  Attestation Data Length
+ * ? bytes  Attestation Data
  */
-WOLFSSL_API int wolfSSL_EvidenceRequest(WOLFSSL *ssl, const void *ev);
+WOLFSSL_API int wolfSSL_AttestationRequest(WOLFSSL *ssl, const void *ev);
 
 /*
  * Returns stored data from the Evidence Request Extension.

@@ -3458,15 +3458,15 @@ void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl)
 
 #ifdef WOLFSSL_REMOTE_ATTESTATION
 
-int wolfSSL_EvidenceRequest(WOLFSSL *ssl, const void *ev) {
-    int ret = TLSX_Push(&ssl->extensions, TLSX_EVIDENCE_REQUEST, ev, ssl->heap);
+int wolfSSL_AttestationRequest(WOLFSSL *ssl, const void *ev) {
+    int ret = TLSX_Push(&ssl->extensions, TLSX_ATTESTATION_REQUEST, ev, ssl->heap);
     if (ret != 0) {
         return ret;
     }
 
     if (wolfSSL_is_server(ssl)) {
         // guaranteed to not be NULL as we just pushed it.
-        TLSX *ext = TLSX_Find(ssl->extensions, TLSX_EVIDENCE_REQUEST);
+        TLSX *ext = TLSX_Find(ssl->extensions, TLSX_ATTESTATION_REQUEST);
         ext->resp = 1;
     }
 
@@ -3474,7 +3474,7 @@ int wolfSSL_EvidenceRequest(WOLFSSL *ssl, const void *ev) {
 }
 
 /*void *wolfSSL_GetEvidence(WOLFSSL *ssl) {
-    TLSX *ext = TLSX_Find(ssl->extensions, TLSX_EVIDENCE_REQUEST);
+    TLSX *ext = TLSX_Find(ssl->extensions, TLSX_ATTESTATION_REQUEST);
     if (ext == NULL) {
         return NULL;
     } else {

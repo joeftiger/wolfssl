@@ -1867,14 +1867,14 @@ int TLSX_ALPN_GetRequest(TLSX* extensions, void** data, word16 *dataSz)
 #ifdef WOLFSSL_REMOTE_ATTESTATION
 
 /**
- * Writes the Evidence Type data into the output buffer.
+ * Writes the Attestation Type data into the output buffer.
  * Assumes that the output buffer is big enough to hold data.
  *
- * @param type      The evidence type.
+ * @param type      The attestation type.
  * @param output    The buffer to write into. Advanced by number of bytes written.
  * @param pSz       Incremented by the number of bytes written into the buffer.
  */
-static void TLSX_EvidenceType_Write(EV_TYPE *type, byte *output, word16 *pSz) {
+static void TLSX_AttestationType_Write(ATT_TYPE *type, byte *output, word16 *pSz) {
     *output = type->length;
     output += OPAQUE8_LEN;
     *pSz += OPAQUE8_LEN;
@@ -1885,7 +1885,7 @@ static void TLSX_EvidenceType_Write(EV_TYPE *type, byte *output, word16 *pSz) {
 }
 
 /**
- * Writes the Evidence Request extension data into the output buffer.
+ * Writes the Attestation Request extension data into the output buffer.
  * Assumes that the output buffer is big enough to hold data.
  * In messages: ClientHello and ServerHello.
  *
@@ -1895,9 +1895,9 @@ static void TLSX_EvidenceType_Write(EV_TYPE *type, byte *output, word16 *pSz) {
  * @param pSz       Incremented by the number of bytes written into the buffer.
  * @return  Either success (0) or sanity error (SANITY_MSG_E)
  */
-static int TLSX_EvidenceRequest_Write(const void *data, byte *output, byte msgType, word16 *pSz) {
+static int TLSX_AttestationRequest_Write(const void *data, byte *output, byte msgType, word16 *pSz) {
     if (msgType == client_hello) {
-        EV_REQUEST_CLIENT *req = (EV_REQUEST_CLIENT *) data;
+        ATT_REQUEST_CLIENT *req = (ATT_REQUEST_CLIENT *) data;
 
         c32toa(req->nonce, output);
         output += OPAQUE32_LEN;
@@ -1908,12 +1908,12 @@ static int TLSX_EvidenceRequest_Write(const void *data, byte *output, byte msgTy
         *pSz += OPAQUE8_LEN;
 
         for (int i = 0; i < req->num_types; i++) {
-            TLSX_EvidenceType_Write(&req->types[i], output, pSz);
+            TLSX_AttestationType_Write(&req->types[i], output, pSz);
         }
     } else if (msgType == server_hello) {
-        EV_REQUEST_SERVER *req = (EV_REQUEST_SERVER *) data;
+        ATT_REQUEST_SERVER *req = (ATT_REQUEST_SERVER *) data;
 
-        TLSX_EvidenceType_Write(&req->type, output, pSz);
+        TLSX_AttestationType_Write(&req->type, output, pSz);
 
         c16toa(req->length, output);
         output += OPAQUE16_LEN;
@@ -1931,10 +1931,10 @@ static int TLSX_EvidenceRequest_Write(const void *data, byte *output, byte msgTy
 }
 
 /**
- * Creates a new Evidence Request from Server object.
+ * Creates a new Attestation Request from Server object.
  */
-static EV_REQUEST_SERVER *TLSX_EvidenceRequest_NewServer(const EV_TYPE *type, word16 length, const void *data, void *heap) {
-    EV_REQUEST_SERVER *req = (EV_REQUEST_SERVER *)XMALLOC(sizeof(EV_REQUEST_SERVER), heap, DYNAMIC_TYPE_TLSX);
+static ATT_REQUEST_SERVER *TLSX_AttestationRequest_NewServer(const ATT_TYPE *type, word16 length, const void *data, void *heap) {
+    ATT_REQUEST_SERVER *req = (ATT_REQUEST_SERVER *)XMALLOC(sizeof(ATT_REQUEST_SERVER), heap, DYNAMIC_TYPE_TLSX);
 
     (void)heap;
 
@@ -1950,7 +1950,7 @@ static EV_REQUEST_SERVER *TLSX_EvidenceRequest_NewServer(const EV_TYPE *type, wo
     return req;
 }
 
-#define EV_WRITE TLSX_EvidenceRequest_Write
+#define ATT_WRITE TLSX_AttestationRequest_Write
 
 #endif /* WOLFSSL_REMOTE_ATTESTATION */
 
@@ -11698,9 +11698,9 @@ static int TLSX_Write(TLSX* list, byte* output, byte* semaphore,
                 break;
 #endif
 #ifdef WOLFSSL_REMOTE_ATTESTATION
-            case TLSX_EVIDENCE_REQUEST:
+            case TLSX_ATTESTATION_REQUEST:
                 WOLFSSL_MSG("Evidence Request extension to write");
-                ret = EV_WRITE(extension->data, output + offset, msgType, &offset);
+                ret = ATT_WRITE(extension->data, output + offset, msgType, &offset);
                 break;
 #endif
 #ifdef WOLFSSL_SRTP
@@ -13769,7 +13769,7 @@ int TLSX_Parse(WOLFSSL* ssl, const byte* input, word16 length, byte msgType,
 #endif
 
 #ifdef WOLFSSL_REMOTE_ATTESTATION
-            case TLSX_EVIDENCE_REQUEST:
+            case TLSX_ATTESTATION_REQUEST:
                 WOLFSSL_MSG("Evidence Request extension received");
 #ifdef WOLFSSL_DEBUG_TLS
                 WOLFSSL_BUFFER(input + offset, size);
