@@ -21,6 +21,7 @@
 
 
 #include "wolfssl/wolfcrypt/error-crypt.h"
+#include <wolfssl/wolfcrypt/error-crypt.h>
 #ifdef HAVE_CONFIG_H
     #include <config.h>
 #endif
@@ -3459,7 +3460,7 @@ void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl)
 #ifdef WOLFSSL_REMOTE_ATTESTATION
 
 int wolfSSL_AttestationRequest(WOLFSSL *ssl, ATT_REQUEST *req) {
-    return 0;
+    WOLFSSL_ENTER("wolfSSL_AttestationRequest");
 
     int ret = TLSX_Push(&ssl->extensions, TLSX_ATTESTATION_REQUEST, req, ssl->heap);
     if (ret != 0) {
@@ -3472,6 +3473,7 @@ int wolfSSL_AttestationRequest(WOLFSSL *ssl, ATT_REQUEST *req) {
         ext->resp = 1;
     }
 
+    WOLFSSL_LEAVE("wolfSSL_AttestationRequest", ret);
     return ret;
 }
 
