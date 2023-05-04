@@ -3669,24 +3669,20 @@ WOLFSSL_API void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl);
 #ifdef WOLFSSL_REMOTE_ATTESTATION
 // TODO: WIP definitions
 
-/*
- * Attestation Request extension.
- *
- * For 'client', the data should be:
- * 4 bytes  Nonce for Attestation Generation
- * 1 byte   Number of Attestations supported (e.g. 2)
- *   1 byte     Type Description Length [1st evidence]
- *   ? bytes    Type Description
- *   1 byte     Type Description Length [2nd evidence]
- *   ? bytes    Type Description
- *
- * For 'server', the data should be
- * 1 byte   Type Description Length [e.g. 1st evidence]
- * ? bytes  Type Description
- * 2 bytes  Attestation Data Length
- * ? bytes  Attestation Data
+/**
+ * Attestation Request
  */
-WOLFSSL_API int wolfSSL_AttestationRequest(WOLFSSL *ssl, const void *ev);
+typedef struct ATT_REQUEST {
+    /** The length of the request data */
+    word16 length;
+    /** The attestation request data */
+    void *request;
+} ATT_REQUEST;
+
+/**
+ * Attestation Request extension.
+ */
+WOLFSSL_API int wolfSSL_AttestationRequest(WOLFSSL *ssl, ATT_REQUEST *req);
 
 /*
  * Returns stored data from the Evidence Request Extension.
@@ -3708,7 +3704,7 @@ WOLFSSL_API int wolfSSL_AttestationRequest(WOLFSSL *ssl, const void *ev);
  *
  * @return  0 if client, SIDE_ERROR if server, and BAD_FUNC_ARG if any param is NULL.
  */
-WOLFSSL_API int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(const void *att, const byte *c, word16 cLen));
+WOLFSSL_API int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(const ATT_REQUEST *att, const byte *c, word16 cLen));
 
 /**
  * Sets the callback for attestation generation on 'server' side.
@@ -3721,7 +3717,7 @@ WOLFSSL_API int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(cons
  *
  * @return  0 if server, SIDE_ERROR if client, and BAD_FUNC_ARG if any param is NULL.
  */
-WOLFSSL_API int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, int (*genAtt)(const void *req, const byte *c, word16 cLen, byte *output));
+WOLFSSL_API int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, int (*genAtt)(const ATT_REQUEST *req, const byte *c, word16 cLen, byte *output));
 
 #endif /* WOLFSSL_REMOTE_ATTESTATION */
 

@@ -2740,32 +2740,6 @@ WOLFSSL_LOCAL int TLSX_Append(TLSX** list, TLSX_Type type,
 
 #endif /* HAVE_TLS_EXTENSIONS */
 
-#ifdef WOLFSSL_REMOTE_ATTESTATION
-
-/* Evidence Type */
-typedef struct ATT_TYPE {
-    word8 length;           /* Evidence Type Description Length */
-    void *description;      /* Evidence Type Description */
-} ATT_TYPE;
-
-/* Evidence Request from client */
-typedef struct ATT_REQUEST_CLIENT {
-    word32 nonce;       /* Nonce for Evidence Generation */
-    word8 num_types;    /* Number of Evidence Types */
-    ATT_TYPE *types;     /* Evidence Type List */
-} ATT_REQUEST_CLIENT;
-
-/*
- * Evidence Request answer from server.
- */
-typedef struct ATT_REQUEST_SERVER {
-    ATT_TYPE type;   /* Evidence Type chosen from client-supported types */
-    word16 length;  /* Evidence Data Length */
-    void *data;     /* Evidence Data */
-} ATT_REQUEST_SERVER;
-
-#endif /* WOLFSSL_REMOTE_ATTESTATION */
-
 /** Server Name Indication - RFC 6066 (session 3) */
 #ifdef HAVE_SNI
 
@@ -5533,7 +5507,8 @@ struct WOLFSSL {
      * @param cLen  the challenge length
      * @return 0 on success
      */
-    int (*verifyAttestation)(const void *att, const byte *c, word16 cLen);
+    int (*verifyAttestation)(const ATT_REQUEST *att, const byte *c, word16 cLen);
+    ATT_REQUEST *attestationRequest;
     /**
      * For attestation generation.
      *
@@ -5543,7 +5518,7 @@ struct WOLFSSL {
      * @param output    the output buffer for the generated attestation
      * @return 0 on success
      */
-    int (*generateAttestation)(const void *req, const byte *c, word16 cLen, byte *output);
+    int (*generateAttestation)(const ATT_REQUEST *req, const byte *c, word16 cLen, byte *output);
 #endif /* WOLFSSL_REMOTE_ATTESTATION */
 };
 
