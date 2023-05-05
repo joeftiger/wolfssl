@@ -1946,9 +1946,15 @@ static word16 TLSX_AttestationRequest_GetSize(const ATT_REQUEST *req) {
     return len;
 }
 
+static void TLSX_AttestationRequest_FreeAll(ATT_REQUEST *req, void *heap) {
+    XFREE(req->request, heap, DYNAMIC_TYPE_TLSX);
+    XFREE(req, heap, DYNAMIC_TYPE_TLSX);
+}
+
 #define ATT_WRITE TLSX_AttestationRequest_Write
 #define ATT_PARSE TLSX_AttestationRequest_Parse
 #define ATT_GET_SIZE TLSX_AttestationRequest_GetSize
+#define ATT_FREE_ALL TLSX_AttestationRequest_FreeAll
 
 #endif /* WOLFSSL_REMOTE_ATTESTATION */
 
@@ -11315,6 +11321,11 @@ void TLSX_FreeAll(TLSX* list, void* heap)
                 KS_FREE_ALL((KeyShareEntry*)extension->data, heap);
                 break;
 #endif
+#ifdef WOLFSSL_REMOTE_ATTESTATION
+            case TLSX_ATTESTATION_REQUEST:
+                ATT_FREE_ALL((ATT_REQUEST *) extension->data, heap);
+                break;
+#endif /* WOLFSSL_REMOTE_ATTESTATION */
 #ifdef WOLFSSL_SRTP
             case TLSX_USE_SRTP:
                 SRTP_FREE((TlsxSrtp*)extension->data, heap);
