@@ -1937,8 +1937,18 @@ static int TLSX_AttestationRequest_Parse(WOLFSSL *ssl, const byte *input, word16
     return 0;
 }
 
+static word16 TLSX_AttestationRequest_GetSize(const ATT_REQUEST *req) {
+    word16 len = 0;
+
+    len += OPAQUE16_LEN;    // length field itself
+    len += req->length;
+
+    return len;
+}
+
 #define ATT_WRITE TLSX_AttestationRequest_Write
 #define ATT_PARSE TLSX_AttestationRequest_Parse
+#define ATT_GET_SIZE TLSX_AttestationRequest_GetSize
 
 #endif /* WOLFSSL_REMOTE_ATTESTATION */
 
@@ -11479,6 +11489,11 @@ static int TLSX_GetSize(TLSX* list, byte* semaphore, byte msgType,
                 length += KS_GET_SIZE((KeyShareEntry*)extension->data, msgType);
                 break;
 #endif
+#ifdef WOLFSSL_REMOTE_ATTESTATION
+            case TLSX_ATTESTATION_REQUEST:
+                length += ATT_GET_SIZE((const ATT_REQUEST *) extension->data);
+                break;
+#endif /* WOLFSSL_REMOTE_ATTESTATION */
 #ifdef WOLFSSL_SRTP
             case TLSX_USE_SRTP:
                 length += SRTP_GET_SIZE((TlsxSrtp*)extension->data);
