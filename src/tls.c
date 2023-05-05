@@ -1881,19 +1881,21 @@ int TLSX_ALPN_GetRequest(TLSX* extensions, void** data, word16 *dataSz)
 static int TLSX_AttestationRequest_Write(const ATT_REQUEST *req, byte *output, byte msgType) {
     WOLFSSL_ENTER("TLSX_AttestationRequest_Write");
 
+    int i = 0;
+
     if (msgType == client_hello || msgType == server_hello) {
 
         c16toa(req->length, output);
-        output += OPAQUE16_LEN;
+        i += OPAQUE16_LEN;
 
-        XMEMCPY(output, req->request, req->length);
-        output += req->length;
+        XMEMCPY(&output[i], req->request, req->length);
+        i += req->length;
     } else {
         WOLFSSL_ERROR_VERBOSE(SANITY_MSG_E);
         return SANITY_MSG_E;
     }
 
-    return 0;
+    return i;
 }
 
 /**
@@ -11685,8 +11687,8 @@ static int TLSX_Write(TLSX* list, byte* output, byte* semaphore,
 #endif
 #ifdef WOLFSSL_REMOTE_ATTESTATION
             case TLSX_ATTESTATION_REQUEST:
-                WOLFSSL_MSG("Evidence Request extension to write");
-                ret = ATT_WRITE(extension->data, output + offset, msgType);
+                WOLFSSL_MSG("Attestation Request extension to write");
+                offset += ATT_WRITE((const ATT_REQUEST *) extension->data, output + offset, msgType);
                 break;
 #endif
 #ifdef WOLFSSL_SRTP
