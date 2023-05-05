@@ -20,6 +20,7 @@
  */
 
 
+#include "wolfssl/ssl.h"
 #include "wolfssl/wolfcrypt/error-crypt.h"
 #include <wolfssl/wolfcrypt/error-crypt.h>
 #ifdef HAVE_CONFIG_H
@@ -3474,6 +3475,24 @@ int wolfSSL_AttestationRequest(WOLFSSL *ssl, ATT_REQUEST *req) {
     }
 
     WOLFSSL_LEAVE("wolfSSL_AttestationRequest", ret);
+    return ret;
+}
+
+int wolfSSL_CTX_AttestationRequest(WOLFSSL_CTX *ctx, ATT_REQUEST *req) {
+    WOLFSSL_ENTER("wolfSSL_CTX_AttestationRequest");
+
+    int ret = TLSX_Push(&ctx->extensions, TLSX_ATTESTATION_REQUEST, req, ctx->heap);
+    if (ret != 0) {
+        return ret;
+    }
+
+    if (ctx->method->side == WOLFSSL_SERVER_END) {
+        // guaranteed to not be NULL as we just pushed it.
+        TLSX *ext = TLSX_Find(ctx->extensions, TLSX_ATTESTATION_REQUEST);
+        ext->resp = 1;
+    }
+
+    WOLFSSL_LEAVE("wolfSSL_CTX_AttestationRequest", ret);
     return ret;
 }
 

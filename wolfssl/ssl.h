@@ -3684,6 +3684,11 @@ typedef struct ATT_REQUEST {
  */
 WOLFSSL_API int wolfSSL_AttestationRequest(WOLFSSL *ssl, ATT_REQUEST *req);
 
+/**
+ * Attestation Request extension.
+ */
+WOLFSSL_API int wolfSSL_CTX_AttestationRequest(WOLFSSL_CTX *ctx, ATT_REQUEST *req);
+
 /*
  * Returns stored data from the Evidence Request Extension.
  *
