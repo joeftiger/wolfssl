@@ -2740,6 +2740,12 @@ WOLFSSL_LOCAL int TLSX_Append(TLSX** list, TLSX_Type type,
 
 #endif /* HAVE_TLS_EXTENSIONS */
 
+#ifdef WOLFSSL_REMOTE_ATTESTATION
+
+WOLFSSL_LOCAL int TLSX_UseAttestationRequest(TLSX** extensions, const ATT_REQUEST *req, void* heap, byte is_server);
+
+#endif
+
 /** Server Name Indication - RFC 6066 (session 3) */
 #ifdef HAVE_SNI
 

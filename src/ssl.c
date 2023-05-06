@@ -3463,16 +3463,11 @@ void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl)
 int wolfSSL_AttestationRequest(WOLFSSL *ssl, ATT_REQUEST *req) {
     WOLFSSL_ENTER("wolfSSL_AttestationRequest");
 
-    int ret = TLSX_Push(&ssl->extensions, TLSX_ATTESTATION_REQUEST, req, ssl->heap);
-    if (ret != 0) {
-        return ret;
+    if (ssl == NULL) {
+        return BAD_FUNC_ARG;
     }
 
-    if (wolfSSL_is_server(ssl)) {
-        // guaranteed to not be NULL as we just pushed it.
-        TLSX *ext = TLSX_Find(ssl->extensions, TLSX_ATTESTATION_REQUEST);
-        ext->resp = 1;
-    }
+    int ret = TLSX_UseAttestationRequest(&ssl->extensions, req, ssl->heap, wolfSSL_is_server(ssl));
 
     WOLFSSL_LEAVE("wolfSSL_AttestationRequest", ret);
     return ret;
@@ -3481,16 +3476,11 @@ int wolfSSL_AttestationRequest(WOLFSSL *ssl, ATT_REQUEST *req) {
 int wolfSSL_CTX_AttestationRequest(WOLFSSL_CTX *ctx, ATT_REQUEST *req) {
     WOLFSSL_ENTER("wolfSSL_CTX_AttestationRequest");
 
-    int ret = TLSX_Push(&ctx->extensions, TLSX_ATTESTATION_REQUEST, req, ctx->heap);
-    if (ret != 0) {
-        return ret;
+    if (ctx == NULL) {
+        return BAD_FUNC_ARG;
     }
 
-    if (ctx->method->side == WOLFSSL_SERVER_END) {
-        // guaranteed to not be NULL as we just pushed it.
-        TLSX *ext = TLSX_Find(ctx->extensions, TLSX_ATTESTATION_REQUEST);
-        ext->resp = 1;
-    }
+    int ret = TLSX_UseAttestationRequest(&ctx->extensions, req, ctx->heap, ctx->method->side == WOLFSSL_SERVER_END);
 
     WOLFSSL_LEAVE("wolfSSL_CTX_AttestationRequest", ret);
     return ret;
@@ -3527,6 +3517,14 @@ int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, int (*genAtt)(const ATT_REQUEST
 
     ssl->generateAttestation = genAtt;
     return 0;
+}
+
+const ATT_REQUEST *wolfSSL_GetAttestationRequest(WOLFSSL *ssl) {
+    if (ssl == NULL) {
+        return NULL;
+    }
+
+    return ssl->attestationRequest;
 }
 
 #endif /* WOLFSSL_REMOTE_ATTESTATION */
