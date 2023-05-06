@@ -1867,14 +1867,48 @@ int TLSX_ALPN_GetRequest(TLSX* extensions, void** data, word16 *dataSz)
 
 #ifdef WOLFSSL_REMOTE_ATTESTATION
 
+static void TLSX_AttestationRequest_FreeAll(ATT_REQUEST *req, void *heap) {
+    (void)heap;
+
+    if (req) {
+        if (req->request) {
+            XFREE(req->request, heap, DYNAMIC_TYPE_TLSX);
+        }
+        XFREE(req, heap, DYNAMIC_TYPE_TLSX);
+    }
+}
+
+ATT_REQUEST *TLSX_AttRequest_New(word16 length, void *data, void *heap) {
+    ATT_REQUEST *req = (ATT_REQUEST *)XMALLOC(sizeof(ATT_REQUEST), heap, DYNAMIC_TYPE_TLSX);
+
+    if (req) {
+        req->length = length;
+        req->request = XMALLOC(length, heap, DYNAMIC_TYPE_TLSX);
+
+        if (req->request) {
+            XMEMCPY(req->request, data, length);
+        } else {
+            XFREE(req, heap, DYNAMIC_TYPE_TLSX);
+        }
+    }
+
+    return req;
+}
+
 int TLSX_UseAttestationRequest(TLSX** extensions, const ATT_REQUEST *req, void* heap, byte is_server)
 {
     if (extensions == NULL) {
         return BAD_FUNC_ARG;
     }
 
-    int ret = TLSX_Push(extensions, TLSX_ATTESTATION_REQUEST, req, heap);
+    ATT_REQUEST *req_cpy = TLSX_AttRequest_New(req->length, req->request, heap);
+    if (req_cpy == NULL) {
+        return MEMORY_ERROR;
+    }
+
+    int ret = TLSX_Push(extensions, TLSX_ATTESTATION_REQUEST, (void *)req_cpy, heap);
     if (ret != 0) {
+        TLSX_AttestationRequest_FreeAll(req_cpy, heap);
         return ret;
     }
 
@@ -1974,12 +2008,6 @@ static word16 TLSX_AttestationRequest_GetSize(const ATT_REQUEST *req) {
     len += req->length;
 
     return len;
-}
-
-static void TLSX_AttestationRequest_FreeAll(ATT_REQUEST *req, void *heap) {
-    (void)heap;
-    XFREE(req->request, heap, DYNAMIC_TYPE_TLSX);
-    XFREE(req, heap, DYNAMIC_TYPE_TLSX);
 }
 
 #define ATT_WRITE TLSX_AttestationRequest_Write
