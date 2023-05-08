@@ -2609,6 +2609,9 @@ typedef enum {
     #endif
 #endif
     TLSX_RENEGOTIATION_INFO         = 0xff01,
+#ifdef HAVE_REMOTE_ATTESTATION
+    TLSX_ATTESTATION_REQUEST         = 0xffaa, /* arbitrary number */
+#endif
 #ifdef WOLFSSL_QUIC
     TLSX_KEY_QUIC_TP_PARAMS_DRAFT   = 0xffa5, /* from draft-ietf-quic-tls-27 */
 #endif
@@ -2736,6 +2739,20 @@ WOLFSSL_LOCAL int TLSX_Append(TLSX** list, TLSX_Type type,
 #error Using TLS extensions requires HAVE_TLS_EXTENSIONS to be defined.
 
 #endif /* HAVE_TLS_EXTENSIONS */
+
+#ifdef HAVE_REMOTE_ATTESTATION
+
+/**
+ * Creates and pushes a new Attestation Request extension to an extension list.
+ * @param extensions    The list to push the new extension
+ * @param req           The attestation request data
+ * @param heap          The heap for dynamic data
+ * @param is_response   If the data is a response
+ * @return WOLFSSL_SUCCESS if success
+ */
+WOLFSSL_LOCAL int TLSX_UseAttestationRequest(TLSX** extensions, byte req, void* heap, byte is_response);
+
+#endif /* HAVE_REMOTE_ATTESTATION */
 
 /** Server Name Indication - RFC 6066 (session 3) */
 #ifdef HAVE_SNI
@@ -5495,6 +5512,13 @@ struct WOLFSSL {
 #endif /* WOLFSSL_QUIC */
 #if defined(WOLFSSL_TLS13) && defined(HAVE_ECH)
     WOLFSSL_EchConfig* echConfigs;
+#endif
+#ifdef HAVE_REMOTE_ATTESTATION
+    /**
+     * The Attestation Request data received from either endpoint.
+     * Must only be 0 if nothing was received.
+     */
+    byte attestationRequest;
 #endif
 };
 

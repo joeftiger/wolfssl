@@ -3665,6 +3665,31 @@ WOLFSSL_API void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl);
 
 /* TLS Extensions */
 
+/* Remote Attestation */
+#ifdef HAVE_REMOTE_ATTESTATION
+
+/**
+ * Attestation Request extension dummy.
+ * @param ssl   The SSL object
+ * @param req   The attestation request data
+ * @return WOLFSSL_SUCCESS on success
+ */
+WOLFSSL_API int wolfSSL_AttestationRequest(WOLFSSL *ssl, byte req);
+
+/**
+ * @param ssl
+ * @return  The attestation data. 0 if nothing was received.
+ */
+/**
+ * Retrieves a received Attestation Request.
+ * @param ssl   The SSL object
+ * @param req   The storage for the attestation data.
+ * @return 0 on success.
+ */
+WOLFSSL_API int wolfSSL_GetAttestationRequest(const WOLFSSL *ssl, byte *req);
+
+#endif /* HAVE_REMOTE_ATTESTATION */
+
 /* Server Name Indication */
 #ifdef HAVE_SNI
 

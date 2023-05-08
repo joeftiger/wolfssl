@@ -1288,6 +1288,10 @@ add_option(WOLFSSL_CRL
     "Enable CRL (Use =io for inline CRL HTTP GET) (default: disabled)"
     "no" "yes;no;io")
 
+
+set(WOLFSSL_RA_HELP_STRING "Enable Remote Attestation (default: enabled)")
+add_option(WOLFSSL_REMOTE_ATTESTATION ${WOLFSSL_RA_HELP_STRING} "yes" "yes;no")
+
 set(WOLFSSL_SNI_HELP_STRING "Enable SNI (default: disabled)")
 add_option(WOLFSSL_SNI ${WOLFSSL_SNI_HELP_STRING} "no" "yes;no")
 
@@ -1783,6 +1787,13 @@ if (WOLFSSL_CRL STREQUAL "yes")
     list(APPEND WOLFSSL_DEFINITIONS "-DHAVE_CRL")
 elseif(WOLFSSL_CRL STREQUAL "io")
     list(APPEND WOLFSSL_DEFINITIONS "-DHAVE_CRL" "-DHAVE_CRL_IO")
+endif()
+
+if (WOLFSSL_REMOTE_ATTESTATION AND WOLFSSL_REMOTE_ATTESTATION STREQUAL "yes")
+    if(NOT WOLFSSL_TLS13)
+        message(FATAL_ERROR "Remote Attestation supported only for TLSv1.3")
+    endif()
+    list(APPEND WOLFSSL_DEFINITIONS "-DHAVE_REMOTE_ATTESTATION")
 endif()
 
 if (WOLFSSL_SNI)

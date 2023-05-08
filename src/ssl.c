@@ -3454,6 +3454,38 @@ void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl)
     return heap;
 }
 
+#ifdef HAVE_REMOTE_ATTESTATION
+
+int wolfSSL_AttestationRequest(WOLFSSL *ssl, byte req) {
+    WOLFSSL_ENTER("wolfSSL_AttestationRequest");
+
+    if (ssl == NULL || req == 0) {
+        return BAD_FUNC_ARG;
+    }
+
+    int ret = TLSX_UseAttestationRequest(&ssl->extensions, req, ssl->heap, wolfSSL_is_server(ssl));
+
+    WOLFSSL_LEAVE("wolfSSL_AttestationRequest", ret);
+    return ret;
+}
+
+int wolfSSL_GetAttestationRequest(const WOLFSSL *ssl, byte *req) {
+    WOLFSSL_ENTER("wolfSSL_GetAttestationRequest");
+
+    int ret = 0;
+    if (ssl == NULL || req == NULL) {
+        ret = BAD_FUNC_ARG;
+    } else if (ssl->attestationRequest == 0) {
+        ret = BAD_STATE_E;
+    }
+
+    *req = ssl->attestationRequest;
+
+    WOLFSSL_LEAVE("wolfSSL_GetAttestationRequest", ret);
+    return ret;
+}
+
+#endif /* HAVE_REMOTE_ATTESTATION */
 
 #ifdef HAVE_SNI
 

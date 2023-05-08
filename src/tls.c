@@ -21,6 +21,7 @@
 
 
 
+#include "wolfssl/wolfcrypt/error-crypt.h"
 #ifdef HAVE_CONFIG_H
     #include <config.h>
 #endif
@@ -1859,6 +1860,129 @@ int TLSX_ALPN_GetRequest(TLSX* extensions, void** data, word16 *dataSz)
 #define ALPN_PARSE(a, b, c, d)  0
 
 #endif /* HAVE_ALPN */
+
+/******************************************************************************/
+/* Remote Attestation                                                         */
+/******************************************************************************/
+
+#ifdef HAVE_REMOTE_ATTESTATION
+
+static void TLSX_AttestationRequest_FreeAll(void *req, void *heap) {
+    (void)heap;
+
+    if (req) {
+        XFREE(req, heap, DYNAMIC_TYPE_TLSX);
+    }
+}
+
+void *TLSX_AttestationRequest_New(byte data, void *heap) {
+    byte *req = (byte *)XMALLOC(sizeof(byte), heap, DYNAMIC_TYPE_TLSX);
+
+    if (req) {
+        *req = data;
+    }
+
+    return req;
+}
+
+int TLSX_UseAttestationRequest(TLSX** extensions, const byte req, void* heap, byte is_response) {
+    if (extensions == NULL) {
+        return BAD_FUNC_ARG;
+    }
+
+    byte *req_cpy = TLSX_AttestationRequest_New(req, heap);
+    if (req_cpy == NULL) {
+        return MEMORY_ERROR;
+    }
+
+    int ret = TLSX_Push(extensions, TLSX_ATTESTATION_REQUEST, (void *)req_cpy, heap);
+    if (ret != 0) {
+        TLSX_AttestationRequest_FreeAll(req_cpy, heap);
+        return ret;
+    }
+
+    if (is_response) {
+        TLSX *ext = TLSX_Find(*extensions, TLSX_ATTESTATION_REQUEST);
+        if (ext == NULL) {
+            return BAD_STATE_E; // should not be NULL at this point
+        }
+        ext->resp = 1;
+    }
+
+    return WOLFSSL_SUCCESS;
+}
+
+/**
+ * Writes the Attestation Request extension data into the output buffer.
+ * Assumes that the output buffer is big enough to hold data.
+ * In messages: ClientHello and ServerHello
+ *
+ * @param req       The attestation request data
+ * @param output    The buffer to write into
+ * @param msgType   The type of the message this extension is being written into
+ * @return The number of bytes written into the output buffer. Negative values indicate errors.
+ */
+static word16 TLSX_AttestationRequest_Write(const byte *req, byte *output, byte msgType) {
+    if (req == NULL || output == NULL) {
+        return BAD_FUNC_ARG;
+    }
+
+    if (msgType == client_hello || msgType == encrypted_extensions) {
+        *output = *req;
+        output++;
+    } else {
+        WOLFSSL_ERROR_VERBOSE(SANITY_MSG_E);
+        return SANITY_MSG_E;
+    }
+
+    return OPAQUE8_LEN;
+}
+
+/**
+ * Parses the Attestation Request extension.
+ *
+ * @param ssl       The SSL/TLS object.
+ * @param input     The extension data.
+ * @param length    The length of the extension data.
+ * @param msgType   The type of the message this extension is being parsed from.
+ * @return 0 on success, other values indicate failure.
+ */
+static int TLSX_AttestationRequest_Parse(WOLFSSL *ssl, const byte *input, word16 length, byte msgType) {
+    WOLFSSL_ENTER("TLSX_AttestationRequest_Parse");
+
+    if (ssl == NULL || input == NULL) {
+        return BAD_FUNC_ARG;
+    }
+
+    if (length < OPAQUE8_LEN) {
+        return BUFFER_ERROR;
+    }
+
+    if (msgType == client_hello || msgType == encrypted_extensions) {
+        byte req = input[0];
+        if (req == 0) {
+            return DECODE_E;
+        }
+
+        ssl->attestationRequest = req;
+    } else {
+        WOLFSSL_ERROR_VERBOSE(SANITY_MSG_E);
+        return SANITY_MSG_E;
+    }
+
+    return 0;
+}
+
+static word16 TLSX_AttestationRequest_GetSize() {
+    return OPAQUE8_LEN;
+}
+
+#define ATT_FREE_ALL TLSX_AttestationRequest_FreeAll
+#define ATT_WRITE TLSX_AttestationRequest_Write
+#define ATT_PARSE TLSX_AttestationRequest_Parse
+#define ATT_GET_SIZE TLSX_AttestationRequest_GetSize
+
+#endif /* HAVE_REMOTE_ATTESTATION */
 
 /******************************************************************************/
 /* Server Name Indication                                                     */
@@ -11128,6 +11252,11 @@ void TLSX_FreeAll(TLSX* list, void* heap)
         list = extension->next;
 
         switch (extension->type) {
+#ifdef HAVE_REMOTE_ATTESTATION
+            case TLSX_ATTESTATION_REQUEST:
+                ATT_FREE_ALL(extension->data, heap);
+                break;
+#endif
 
 #ifdef HAVE_SNI
             case TLSX_SERVER_NAME:
@@ -11287,6 +11416,13 @@ static int TLSX_GetSize(TLSX* list, byte* semaphore, byte msgType,
         length += HELLO_EXT_TYPE_SZ + OPAQUE16_LEN;
 
         switch (extension->type) {
+#ifdef HAVE_REMOTE_ATTESTATION
+            case TLSX_ATTESTATION_REQUEST:
+                /* Remote Attestation only sends data during hello. */
+                if (msgType == client_hello || msgType == encrypted_extensions)
+                    length += ATT_GET_SIZE();
+                break;
+#endif
 
 #ifdef HAVE_SNI
             case TLSX_SERVER_NAME:
@@ -11463,6 +11599,14 @@ static int TLSX_Write(TLSX* list, byte* output, byte* semaphore,
 
         /* extension data should be written internally. */
         switch (extension->type) {
+#ifdef HAVE_REMOTE_ATTESTATION
+            case TLSX_ATTESTATION_REQUEST:
+                if (msgType == client_hello || msgType == encrypted_extensions) {
+                    WOLFSSL_MSG("Attestation Request extension to write");
+                    offset += ATT_WRITE(extension->data, output + offset, msgType);
+                }
+                break;
+#endif
 #ifdef HAVE_SNI
             case TLSX_SERVER_NAME:
                 if (isRequest) {
@@ -13165,6 +13309,21 @@ int TLSX_Parse(WOLFSSL* ssl, const byte* input, word16 length, byte msgType,
             return BUFFER_ERROR;
 
         switch (type) {
+#ifdef HAVE_REMOTE_ATTESTATION
+            case TLSX_ATTESTATION_REQUEST:
+                WOLFSSL_MSG("Attestation Request extension received");
+            #ifdef WOLFSSL_DEBUG_TLS
+                WOLFSSL_BUFFER(input + offset, size);
+            #endif
+
+#ifdef WOLFSSL_TLS13
+                if (!IsAtLeastTLSv1_3(ssl->version) || msgType != client_hello || msgType != encrypted_extensions) {
+                        return EXT_NOT_ALLOWED;
+                }
+#endif
+                ret = ATT_PARSE(ssl, input + offset, size, msgType);
+                break;
+#endif
 #ifdef HAVE_SNI
             case TLSX_SERVER_NAME:
                 WOLFSSL_MSG("SNI extension received");
