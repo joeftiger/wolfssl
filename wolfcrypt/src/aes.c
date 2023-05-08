@@ -4219,7 +4219,7 @@ int wc_AesSetIV(Aes* aes, const byte* iv)
     #endif
 
     #ifdef WOLF_CRYPTO_CB
-        if (aes->devId != INVALID_DEVID) {
+        {
             int crypto_cb_ret = wc_CryptoCb_AesCbcEncrypt(aes, out, in, sz);
             if (crypto_cb_ret != CRYPTOCB_UNAVAILABLE)
                 return crypto_cb_ret;
@@ -4352,7 +4352,7 @@ int wc_AesSetIV(Aes* aes, const byte* iv)
     #endif
 
     #ifdef WOLF_CRYPTO_CB
-        if (aes->devId != INVALID_DEVID) {
+        {
             int crypto_cb_ret = wc_CryptoCb_AesCbcDecrypt(aes, out, in, sz);
             if (crypto_cb_ret != CRYPTOCB_UNAVAILABLE)
                 return crypto_cb_ret;
@@ -4670,7 +4670,7 @@ int wc_AesSetIV(Aes* aes, const byte* iv)
             }
 
         #ifdef WOLF_CRYPTO_CB
-            if (aes->devId != INVALID_DEVID) {
+            {
                 int crypto_cb_ret = wc_CryptoCb_AesCtrEncrypt(aes, out, in, sz);
                 if (crypto_cb_ret != CRYPTOCB_UNAVAILABLE)
                     return crypto_cb_ret;
@@ -6863,7 +6863,7 @@ int wc_AesGcmEncrypt(Aes* aes, byte* out, const byte* in, word32 sz,
     }
 
 #ifdef WOLF_CRYPTO_CB
-    if (aes->devId != INVALID_DEVID) {
+    {
         int crypto_cb_ret =
             wc_CryptoCb_AesGcmEncrypt(aes, out, in, sz, iv, ivSz, authTag,
                                       authTagSz, authIn, authInSz);
@@ -7419,7 +7419,7 @@ int wc_AesGcmDecrypt(Aes* aes, byte* out, const byte* in, word32 sz,
     }
 
 #ifdef WOLF_CRYPTO_CB
-    if (aes->devId != INVALID_DEVID) {
+    {
         int crypto_cb_ret =
             wc_CryptoCb_AesGcmDecrypt(aes, out, in, sz, iv, ivSz,
                                       authTag, authTagSz, authIn, authInSz);
@@ -9311,7 +9311,7 @@ int wc_AesCcmEncrypt(Aes* aes, byte* out, const byte* in, word32 inSz,
     }
 
 #ifdef WOLF_CRYPTO_CB
-    if (aes->devId != INVALID_DEVID) {
+    {
         int crypto_cb_ret =
             wc_CryptoCb_AesCcmEncrypt(aes, out, in, inSz, nonce, nonceSz,
                                       authTag, authTagSz, authIn, authInSz);
@@ -9490,7 +9490,7 @@ int  wc_AesCcmDecrypt(Aes* aes, byte* out, const byte* in, word32 inSz,
     }
 
 #ifdef WOLF_CRYPTO_CB
-    if (aes->devId != INVALID_DEVID) {
+    {
         int crypto_cb_ret =
             wc_CryptoCb_AesCcmDecrypt(aes, out, in, inSz, nonce, nonceSz,
             authTag, authTagSz, authIn, authInSz);
@@ -10009,7 +10009,7 @@ static WARN_UNUSED_RESULT int _AesEcbEncrypt(
     word32 blocks = sz / AES_BLOCK_SIZE;
 
 #ifdef WOLF_CRYPTO_CB
-    if (aes->devId != INVALID_DEVID) {
+    {
         int ret = wc_CryptoCb_AesEcbEncrypt(aes, out, in, sz);
         if (ret != CRYPTOCB_UNAVAILABLE)
             return ret;
@@ -10045,7 +10045,7 @@ static WARN_UNUSED_RESULT int _AesEcbDecrypt(
     word32 blocks = sz / AES_BLOCK_SIZE;
 
 #ifdef WOLF_CRYPTO_CB
-    if (aes->devId != INVALID_DEVID) {
+    {
         int ret = wc_CryptoCb_AesEcbDecrypt(aes, out, in, sz);
         if (ret != CRYPTOCB_UNAVAILABLE)
             return ret;
