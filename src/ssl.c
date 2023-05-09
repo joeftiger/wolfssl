@@ -14578,7 +14578,9 @@ void SetupSession(WOLFSSL* ssl)
     }
 #endif
     session->timeout = ssl->timeout;
+#ifndef NO_ASN_TIME
     session->bornOn  = LowResTimer();
+#endif
 #if defined(SESSION_CERTS) || (defined(WOLFSSL_TLS13) && \
                                defined(HAVE_SESSION_TICKET))
     session->version = ssl->version;
