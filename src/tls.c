@@ -1911,11 +1911,12 @@ int TLSX_UseAttestationRequest(TLSX** extensions, const ATT_REQUEST *req, void* 
         return ret;
     }
 
-    if (is_server) {
+//    if (is_server) {
         TLSX *ext = TLSX_Find(*extensions, TLSX_ATTESTATION_REQUEST);
         if (ext == NULL) {
             return BAD_STATE_E;
         }
+    if (is_server) {
         ext->resp = 1;
     }
 
@@ -1946,9 +1947,12 @@ static word16 TLSX_AttestationRequest_Write(const ATT_REQUEST *req, byte *output
         i += req->length;
     } else {
         WOLFSSL_ERROR_VERBOSE(SANITY_MSG_E);
+
+        WOLFSSL_LEAVE("TLSX_AttestationRequest_Write", SANITY_MSG_E);
         return SANITY_MSG_E;
     }
 
+    WOLFSSL_LEAVE("TLSX_AttestationRequest_Write", i);
     return i;
 }
 
@@ -1975,17 +1979,20 @@ static int TLSX_AttestationRequest_Parse(WOLFSSL *ssl, const byte *input, word16
     if (msgType == client_hello || msgType == server_hello) {
         ATT_REQUEST* req = (ATT_REQUEST*)XMALLOC(sizeof(ATT_REQUEST), ssl->heap, DYNAMIC_TYPE_TLSX);
         if (req == NULL) {
+            WOLFSSL_LEAVE("TLSX_AttestationRequest_Parse", MEMORY_ERROR);
             return MEMORY_ERROR;
         }
 
         ato16(input, &req->length);
         input += OPAQUE16_LEN;
         if (length < OPAQUE16_LEN + req->length) {
+            WOLFSSL_LEAVE("TLSX_AttestationRequest_Parse", BUFFER_ERROR);
             return BUFFER_ERROR;
         }
 
         req->request = (void *) XMALLOC(req->length, ssl->heap, DYNAMIC_TYPE_TLSX);
         if (req->request == NULL) {
+            WOLFSSL_LEAVE("TLSX_AttestationRequest_Parse", MEMORY_ERROR);
             return MEMORY_ERROR;
         }
         XMEMCPY(req->request, input, req->length);
@@ -1994,18 +2001,22 @@ static int TLSX_AttestationRequest_Parse(WOLFSSL *ssl, const byte *input, word16
         ssl->attestationRequest = req;
     } else {
         WOLFSSL_ERROR_VERBOSE(SANITY_MSG_E);
+        WOLFSSL_LEAVE("TLSX_AttestationRequest_Parse", SANITY_MSG_E);
         return SANITY_MSG_E;
     }
 
+    WOLFSSL_LEAVE("TLSX_AttestationRequest_Parse", 0);
     return 0;
 }
 
 static word16 TLSX_AttestationRequest_GetSize(const ATT_REQUEST *req) {
+    WOLFSSL_ENTER("TLSX_AttestationRequest_GetSize");
     word16 len = 0;
 
     len += OPAQUE16_LEN;    // length field itself
     len += req->length;
 
+    WOLFSSL_LEAVE("TLSX_AttestationRequest_GetSize", len);
     return len;
 }
 
@@ -12837,6 +12848,9 @@ int TLSX_WriteRequest(WOLFSSL* ssl, byte* output, byte msgType, word16* pOffset)
          * protocol.
          */
         TURN_ON(semaphore, TLSX_ToSemaphore(TLSX_PRE_SHARED_KEY));
+    #endif
+    #ifdef WOLFSSL_REMOTE_ATTESTATION
+        TURN_OFF(semaphore, TLSX_ToSemaphore(TLSX_ATTESTATION_REQUEST));
     #endif
 #endif /* WOLFSSL_TLS13 */
     #if defined(HAVE_CERTIFICATE_STATUS_REQUEST) \
