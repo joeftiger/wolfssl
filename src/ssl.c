@@ -3455,7 +3455,7 @@ void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl)
 }
 
 
-#ifdef WOLFSSL_REMOTE_ATTESTATION
+#ifdef HAVE_REMOTE_ATTESTATION
 
 int wolfSSL_AttestationRequest(WOLFSSL *ssl, ATT_REQUEST *req) {
     WOLFSSL_ENTER("wolfSSL_AttestationRequest");
@@ -3524,7 +3524,7 @@ const ATT_REQUEST *wolfSSL_GetAttestationRequest(WOLFSSL *ssl) {
     return ssl->attestationRequest;
 }
 
-#endif /* WOLFSSL_REMOTE_ATTESTATION */
+#endif /* HAVE_REMOTE_ATTESTATION */
 
 #ifdef HAVE_SNI
 

@@ -3666,7 +3666,7 @@ WOLFSSL_API void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl);
 
 /* TLS Extensions */
 
-#ifdef WOLFSSL_REMOTE_ATTESTATION
+#ifdef HAVE_REMOTE_ATTESTATION
 // TODO: WIP definitions
 
 /**
@@ -3726,7 +3726,7 @@ WOLFSSL_API int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, int (*genAtt)(const
 
 WOLFSSL_API const ATT_REQUEST *wolfSSL_GetAttestationRequest(WOLFSSL *ssl);
 
-#endif /* WOLFSSL_REMOTE_ATTESTATION */
+#endif /* HAVE_REMOTE_ATTESTATION */
 
 /* Server Name Indication */
 #ifdef HAVE_SNI

@@ -1864,7 +1864,7 @@ int TLSX_ALPN_GetRequest(TLSX* extensions, void** data, word16 *dataSz)
 /* Remote Attestation                                                         */
 /******************************************************************************/
 
-#ifdef WOLFSSL_REMOTE_ATTESTATION
+#ifdef HAVE_REMOTE_ATTESTATION
 
 static void TLSX_AttestationRequest_FreeAll(ATT_REQUEST *req, void *heap) {
     (void)heap;
@@ -2025,7 +2025,7 @@ static word16 TLSX_AttestationRequest_GetSize(const ATT_REQUEST *req) {
 #define ATT_GET_SIZE TLSX_AttestationRequest_GetSize
 #define ATT_FREE_ALL TLSX_AttestationRequest_FreeAll
 
-#endif /* WOLFSSL_REMOTE_ATTESTATION */
+#endif /* HAVE_REMOTE_ATTESTATION */
 
 /******************************************************************************/
 /* Server Name Indication                                                     */
@@ -11390,11 +11390,11 @@ void TLSX_FreeAll(TLSX* list, void* heap)
                 KS_FREE_ALL((KeyShareEntry*)extension->data, heap);
                 break;
 #endif
-#ifdef WOLFSSL_REMOTE_ATTESTATION
+#ifdef HAVE_REMOTE_ATTESTATION
             case TLSX_ATTESTATION_REQUEST:
                 ATT_FREE_ALL((ATT_REQUEST *) extension->data, heap);
                 break;
-#endif /* WOLFSSL_REMOTE_ATTESTATION */
+#endif /* HAVE_REMOTE_ATTESTATION */
 #ifdef WOLFSSL_SRTP
             case TLSX_USE_SRTP:
                 SRTP_FREE((TlsxSrtp*)extension->data, heap);
@@ -11569,11 +11569,11 @@ static int TLSX_GetSize(TLSX* list, byte* semaphore, byte msgType,
                 length += KS_GET_SIZE((KeyShareEntry*)extension->data, msgType);
                 break;
 #endif
-#ifdef WOLFSSL_REMOTE_ATTESTATION
+#ifdef HAVE_REMOTE_ATTESTATION
             case TLSX_ATTESTATION_REQUEST:
                 length += ATT_GET_SIZE((const ATT_REQUEST *) extension->data);
                 break;
-#endif /* WOLFSSL_REMOTE_ATTESTATION */
+#endif /* HAVE_REMOTE_ATTESTATION */
 #ifdef WOLFSSL_SRTP
             case TLSX_USE_SRTP:
                 length += SRTP_GET_SIZE((TlsxSrtp*)extension->data);
@@ -11780,7 +11780,7 @@ static int TLSX_Write(TLSX* list, byte* output, byte* semaphore,
                                                       output + offset, msgType);
                 break;
 #endif
-#ifdef WOLFSSL_REMOTE_ATTESTATION
+#ifdef HAVE_REMOTE_ATTESTATION
             case TLSX_ATTESTATION_REQUEST:
                 WOLFSSL_MSG("Attestation Request extension to write");
                 offset += ATT_WRITE((const ATT_REQUEST *) extension->data, output + offset, msgType);
@@ -12849,7 +12849,7 @@ int TLSX_WriteRequest(WOLFSSL* ssl, byte* output, byte msgType, word16* pOffset)
          */
         TURN_ON(semaphore, TLSX_ToSemaphore(TLSX_PRE_SHARED_KEY));
     #endif
-    #ifdef WOLFSSL_REMOTE_ATTESTATION
+    #ifdef HAVE_REMOTE_ATTESTATION
         TURN_OFF(semaphore, TLSX_ToSemaphore(TLSX_ATTESTATION_REQUEST));
     #endif
 #endif /* WOLFSSL_TLS13 */
@@ -13854,7 +13854,7 @@ int TLSX_Parse(WOLFSSL* ssl, const byte* input, word16 length, byte msgType,
                 break;
 #endif
 
-#ifdef WOLFSSL_REMOTE_ATTESTATION
+#ifdef HAVE_REMOTE_ATTESTATION
             case TLSX_ATTESTATION_REQUEST:
                 WOLFSSL_MSG("Attestation Request extension received");
 #ifdef WOLFSSL_DEBUG_TLS
@@ -13867,7 +13867,7 @@ int TLSX_Parse(WOLFSSL* ssl, const byte* input, word16 length, byte msgType,
 
                 ret = ATT_PARSE(ssl, input + offset, size, msgType);
                 break;
-#endif /* WOLFSSL_REMOTE_ATTESTATION */
+#endif /* HAVE_REMOTE_ATTESTATION */
             default:
                 WOLFSSL_MSG("Unknown TLS extension type");
         }

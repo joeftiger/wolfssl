@@ -2608,7 +2608,7 @@ typedef enum {
     TLSX_KEY_QUIC_TP_PARAMS         = 0x0039, /* RFC 9001, ch. 8.2 */
     #endif
 #endif
-#ifdef WOLFSSL_REMOTE_ATTESTATION
+#ifdef HAVE_REMOTE_ATTESTATION
     TLSX_ATTESTATION_REQUEST           = 0xAA00, /* remote attestation, arbitrary number for now */
 #endif
     TLSX_RENEGOTIATION_INFO         = 0xff01,
@@ -2740,7 +2740,7 @@ WOLFSSL_LOCAL int TLSX_Append(TLSX** list, TLSX_Type type,
 
 #endif /* HAVE_TLS_EXTENSIONS */
 
-#ifdef WOLFSSL_REMOTE_ATTESTATION
+#ifdef HAVE_REMOTE_ATTESTATION
 
 WOLFSSL_LOCAL int TLSX_UseAttestationRequest(TLSX** extensions, const ATT_REQUEST *req, void* heap, byte is_server);
 
@@ -5505,7 +5505,7 @@ struct WOLFSSL {
 #if defined(WOLFSSL_TLS13) && defined(HAVE_ECH)
     WOLFSSL_EchConfig* echConfigs;
 #endif
-#ifdef WOLFSSL_REMOTE_ATTESTATION
+#ifdef HAVE_REMOTE_ATTESTATION
     /** For attestation verification.
      *
      * @param att   the attestation data
@@ -5525,7 +5525,7 @@ struct WOLFSSL {
      * @return 0 on success
      */
     int (*generateAttestation)(const ATT_REQUEST *req, const byte *c, word16 cLen, byte *output);
-#endif /* WOLFSSL_REMOTE_ATTESTATION */
+#endif /* HAVE_REMOTE_ATTESTATION */
 };
 
 /*
