@@ -3673,21 +3673,45 @@ WOLFSSL_API void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl);
  * Attestation Request
  */
 typedef struct ATT_REQUEST {
-    /** The length of the request data */
-    word16 length;
-    /** The attestation request data */
-    void *request;
+    /** The required length for the attestation challenge */
+    word16 challengeSize;
+    /** The attestation type size */
+    word16 typeSize;
+    /** The attestation type */
+    void *type;
+    /** The attestation data size */
+    word16 dataSize;
+    /** The attestation data */
+    void *data;
 } ATT_REQUEST;
 
 /**
- * Attestation Request extension.
+ * Prints an attestation request to the given file.
+ * @param fp                The FILE pointer to print to
+ * @param req               The attestation request to print
+ * @see wolfSSL_AttestationRequest_print_ex
  */
-WOLFSSL_API int wolfSSL_AttestationRequest(WOLFSSL *ssl, ATT_REQUEST *req);
+WOLFSSL_API void wolfSSL_AttestationRequest_print(XFILE fp, const ATT_REQUEST *req);
+
+/**
+ * Prints an attestation request to the given file.
+ * @param fp                The FILE pointer to print to
+ * @param req               The attestation request to print
+ * @param typeIsStr         Whether the attestation type should be printed as a string
+ * @param dataIsStr         Whether the attestation data should be printed as a string
+ * @see wolfSSL_AttestationRequest_print
+ */
+WOLFSSL_API void wolfSSL_AttestationRequest_print_ex(XFILE fp, const ATT_REQUEST *req, byte typeIsStr, byte dataIsStr);
 
 /**
  * Attestation Request extension.
  */
-WOLFSSL_API int wolfSSL_CTX_AttestationRequest(WOLFSSL_CTX *ctx, ATT_REQUEST *req);
+WOLFSSL_API int wolfSSL_AttestationRequest(WOLFSSL *ssl, const ATT_REQUEST *req);
+
+/**
+ * Attestation Request extension.
+ */
+WOLFSSL_API int wolfSSL_CTX_AttestationRequest(WOLFSSL_CTX *ctx, const ATT_REQUEST *req);
 
 /*
  * Returns stored data from the Evidence Request Extension.
@@ -3718,7 +3742,7 @@ WOLFSSL_API int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(cons
  * @param genAtt    The attestation generator.
  *                  Takes an attestation request, a challenge, a challenge length and a buffer for generated
  *                  attestation data as arguments.
- *                  Must return 0 on success.
+ *                  Must return number of written bytes.0 if unsuccessful.
  *
  * @return  0 if server, SIDE_ERROR if client, and BAD_FUNC_ARG if any param is NULL.
  */

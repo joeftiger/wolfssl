@@ -3457,7 +3457,33 @@ void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl)
 
 #ifdef HAVE_REMOTE_ATTESTATION
 
-int wolfSSL_AttestationRequest(WOLFSSL *ssl, ATT_REQUEST *req) {
+void wolfSSL_AttestationRequest_print(XFILE fp, const ATT_REQUEST *req) {
+    return wolfSSL_AttestationRequest_print_ex(fp, req, 0, 0);
+}
+
+void wolfSSL_AttestationRequest_print_ex(XFILE fp, const ATT_REQUEST *req, byte typeIsStr, byte dataIsStr) {
+    if (fp == NULL | req == NULL) {
+        return;
+    }
+
+    fprintf(fp, "Attestation Request:\n");
+
+    fprintf(fp, "    Type : %s", typeIsStr ? "" : "0x");
+    char *type = req->type;
+    for (int i = 0; i < req->typeSize; i++) {
+        fprintf(fp, typeIsStr ? "%c" : "%X", type[i]);
+    }
+    fprintf(fp, "\n");
+
+    fprintf(fp, "    Data : %s", dataIsStr ? "" : "0x");
+    char *data = req->data;
+    for (int i = 0; i < req->dataSize; i++) {
+        fprintf(fp, dataIsStr ? "%c" : "%X", data[i]);
+    }
+    fprintf(fp, "\n");
+}
+
+int wolfSSL_AttestationRequest(WOLFSSL *ssl, const ATT_REQUEST *req) {
     WOLFSSL_ENTER("wolfSSL_AttestationRequest");
 
     if (ssl == NULL) {
@@ -3470,7 +3496,7 @@ int wolfSSL_AttestationRequest(WOLFSSL *ssl, ATT_REQUEST *req) {
     return ret;
 }
 
-int wolfSSL_CTX_AttestationRequest(WOLFSSL_CTX *ctx, ATT_REQUEST *req) {
+int wolfSSL_CTX_AttestationRequest(WOLFSSL_CTX *ctx, const ATT_REQUEST *req) {
     WOLFSSL_ENTER("wolfSSL_CTX_AttestationRequest");
 
     if (ctx == NULL) {

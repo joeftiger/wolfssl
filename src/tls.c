@@ -21,6 +21,7 @@
 
 
 
+#include "wolfssl/wolfcrypt/error-crypt.h"
 #ifdef HAVE_CONFIG_H
     #include <config.h>
 #endif
@@ -1866,32 +1867,50 @@ int TLSX_ALPN_GetRequest(TLSX* extensions, void** data, word16 *dataSz)
 
 #ifdef HAVE_REMOTE_ATTESTATION
 
+#define ATT_CHALLENGE_LABEL "Remote Attestation"
+#define ATT_CHALLENGE_LABEL_LEN strlen(ATT_CHALLENGE_LABEL)
+#define ATT_BUFFER_SIZE 16384
+
 static void TLSX_AttestationRequest_FreeAll(ATT_REQUEST *req, void *heap) {
     (void)heap;
 
     if (req) {
-        if (req->request) {
-            XFREE(req->request, heap, DYNAMIC_TYPE_TLSX);
+        if (req->type) {
+            XFREE(req->type, heap, DYNAMIC_TYPE_TLSX);
+        }
+        if (req->data) {
+            XFREE(req->data, heap, DYNAMIC_TYPE_TLSX);
         }
         XFREE(req, heap, DYNAMIC_TYPE_TLSX);
     }
 }
 
-ATT_REQUEST *TLSX_AttRequest_New(word16 length, void *data, void *heap) {
-    ATT_REQUEST *req = (ATT_REQUEST *)XMALLOC(sizeof(ATT_REQUEST), heap, DYNAMIC_TYPE_TLSX);
+ATT_REQUEST *TLSX_AttRequest_NewCopy(const ATT_REQUEST *req, void *heap) {
+    ATT_REQUEST *req_cpy = (ATT_REQUEST *) XMALLOC(sizeof(ATT_REQUEST), heap, DYNAMIC_TYPE_TLSX);
 
     if (req) {
-        req->length = length;
-        req->request = XMALLOC(length, heap, DYNAMIC_TYPE_TLSX);
-
-        if (req->request) {
-            XMEMCPY(req->request, data, length);
-        } else {
-            XFREE(req, heap, DYNAMIC_TYPE_TLSX);
+        req_cpy->challengeSize = req->challengeSize;
+        req_cpy->type = XMALLOC(req->typeSize, heap, DYNAMIC_TYPE_TLSX);
+        if (req_cpy->type == NULL) {
+            XFREE(req_cpy, heap, DYNAMIC_TYPE_TLSX);
+            goto exit;
         }
+        req_cpy->data = XMALLOC(req->dataSize, heap, DYNAMIC_TYPE_TLSX);
+        if (req_cpy->data == NULL) {
+            XFREE(req_cpy->type, heap, DYNAMIC_TYPE_TLSX);
+            XFREE(req_cpy, heap, DYNAMIC_TYPE_TLSX);
+            goto exit;
+        }
+
+        req_cpy->typeSize = req->typeSize;
+        XMEMCPY(req_cpy->type, req->type, req_cpy->typeSize);
+
+        req_cpy->dataSize = req->dataSize;
+        XMEMCPY(req_cpy->data, req->data, req_cpy->dataSize);
     }
 
-    return req;
+    exit:
+    return req_cpy;
 }
 
 int TLSX_UseAttestationRequest(TLSX** extensions, const ATT_REQUEST *req, void* heap, byte is_server)
@@ -1900,7 +1919,7 @@ int TLSX_UseAttestationRequest(TLSX** extensions, const ATT_REQUEST *req, void* 
         return BAD_FUNC_ARG;
     }
 
-    ATT_REQUEST *req_cpy = TLSX_AttRequest_New(req->length, req->request, heap);
+    ATT_REQUEST *req_cpy = TLSX_AttRequest_NewCopy(req, heap);
     if (req_cpy == NULL) {
         return MEMORY_ERROR;
     }
@@ -1911,12 +1930,11 @@ int TLSX_UseAttestationRequest(TLSX** extensions, const ATT_REQUEST *req, void* 
         return ret;
     }
 
-//    if (is_server) {
+    if (is_server) {
         TLSX *ext = TLSX_Find(*extensions, TLSX_ATTESTATION_REQUEST);
         if (ext == NULL) {
             return BAD_STATE_E;
         }
-    if (is_server) {
         ext->resp = 1;
     }
 
@@ -1939,15 +1957,21 @@ static word16 TLSX_AttestationRequest_Write(const ATT_REQUEST *req, byte *output
 
     word16 i = 0;
 
-    if (msgType == client_hello || msgType == server_hello) {
-        c16toa(req->length, output);
+    if (msgType == client_hello || msgType == encrypted_extensions) {
+        c16toa(req->challengeSize, &output[i]);
         i += OPAQUE16_LEN;
 
-        XMEMCPY(&output[i], req->request, req->length);
-        i += req->length;
+        c16toa(req->typeSize, &output[i]);
+        i += OPAQUE16_LEN;
+        XMEMCPY(&output[i], req->type, req->typeSize);
+        i += req->typeSize;
+
+        c16toa(req->dataSize, &output[i]);
+        i += OPAQUE16_LEN;
+        XMEMCPY(&output[i], req->data, req->dataSize);
+        i += req->dataSize;
     } else {
         WOLFSSL_ERROR_VERBOSE(SANITY_MSG_E);
-
         WOLFSSL_LEAVE("TLSX_AttestationRequest_Write", SANITY_MSG_E);
         return SANITY_MSG_E;
     }
@@ -1968,56 +1992,140 @@ static word16 TLSX_AttestationRequest_Write(const ATT_REQUEST *req, byte *output
 static int TLSX_AttestationRequest_Parse(WOLFSSL *ssl, const byte *input, word16 length, byte msgType) {
     WOLFSSL_ENTER("TLSX_AttestationRequest_Parse");
 
+    int ret = 0;
+
     if (ssl == NULL || input == NULL) {
-        return BAD_FUNC_ARG;
+        ret = BAD_FUNC_ARG;
+        goto exit;
     }
 
-    if (length < OPAQUE16_LEN) {
-        return BUFFER_ERROR;
+    if (length < 3 * OPAQUE16_LEN) {
+        ret = BUFFER_ERROR;
+        goto exit;
     }
 
-    if (msgType == client_hello || msgType == server_hello) {
+    if (msgType == client_hello || msgType == encrypted_extensions) {
         ATT_REQUEST* req = (ATT_REQUEST*)XMALLOC(sizeof(ATT_REQUEST), ssl->heap, DYNAMIC_TYPE_TLSX);
         if (req == NULL) {
-            WOLFSSL_LEAVE("TLSX_AttestationRequest_Parse", MEMORY_ERROR);
-            return MEMORY_ERROR;
+            ret = MEMORY_ERROR;
+            goto exit;
         }
-
-        ato16(input, &req->length);
+        // parsing attestation challenge size
+        ato16(input, &req->challengeSize);
         input += OPAQUE16_LEN;
-        if (length < OPAQUE16_LEN + req->length) {
-            WOLFSSL_LEAVE("TLSX_AttestationRequest_Parse", BUFFER_ERROR);
-            return BUFFER_ERROR;
+
+        // parsing attestation type
+        ato16(input, &req->typeSize);
+        input += OPAQUE16_LEN;
+        if (length < OPAQUE16_LEN + req->typeSize) {
+            ret = BUFFER_ERROR;
+            goto exit;
         }
 
-        req->request = (void *) XMALLOC(req->length, ssl->heap, DYNAMIC_TYPE_TLSX);
-        if (req->request == NULL) {
-            WOLFSSL_LEAVE("TLSX_AttestationRequest_Parse", MEMORY_ERROR);
-            return MEMORY_ERROR;
+        req->type = (void *) XMALLOC(req->typeSize, ssl->heap, DYNAMIC_TYPE_TLSX);
+        if (req->type == NULL) {
+            ret = MEMORY_ERROR;
+            goto exit;
         }
-        XMEMCPY(req->request, input, req->length);
-        input += req->length;
+        XMEMCPY(req->type, input, req->typeSize);
+        input += req->typeSize;
+
+        // parsing attestation data
+        ato16(input, &req->dataSize);
+        input += OPAQUE16_LEN;
+        if (length < OPAQUE16_LEN + req->typeSize + req->dataSize) {
+            ret = BUFFER_ERROR;
+            goto exit;
+        }
+
+        req->data = (void *) XMALLOC(req->dataSize, ssl->heap, DYNAMIC_TYPE_TLSX);
+        if (req->data == NULL) {
+            ret = MEMORY_ERROR;
+            goto exit;
+        }
+        XMEMCPY(req->data, input, req->dataSize);
+        input += req->dataSize;
 
         ssl->attestationRequest = req;
     } else {
         WOLFSSL_ERROR_VERBOSE(SANITY_MSG_E);
-        WOLFSSL_LEAVE("TLSX_AttestationRequest_Parse", SANITY_MSG_E);
-        return SANITY_MSG_E;
+        ret = SANITY_MSG_E;
     }
 
-    WOLFSSL_LEAVE("TLSX_AttestationRequest_Parse", 0);
-    return 0;
+    exit:
+    WOLFSSL_LEAVE("TLSX_AttestationRequest_Parse", ret);
+    return ret;
 }
 
 static word16 TLSX_AttestationRequest_GetSize(const ATT_REQUEST *req) {
     WOLFSSL_ENTER("TLSX_AttestationRequest_GetSize");
     word16 len = 0;
 
-    len += OPAQUE16_LEN;    // length field itself
-    len += req->length;
+    len += OPAQUE16_LEN;    // challengeSize field
+    len += OPAQUE16_LEN;    // typeSize field itself
+    len += req->typeSize;
+    len += OPAQUE16_LEN;    // dataSize field itself
+    len += req->dataSize;
 
     WOLFSSL_LEAVE("TLSX_AttestationRequest_GetSize", len);
     return len;
+}
+
+static int CreateAttestationRequestResponse(WOLFSSL *ssl) {
+    if (ssl == NULL || ssl->attestationRequest == NULL || ssl->generateAttestation == NULL) {
+        return BAD_FUNC_ARG;
+    }
+
+    int ret;
+    unsigned char *c = NULL;
+    byte *att = NULL;
+
+    // attestation challenge token
+    const ATT_REQUEST *req = ssl->attestationRequest;
+    c = XMALLOC(req->challengeSize, ssl->heap, DYNAMIC_TYPE_TLSX);
+    if (c == NULL) {
+        ret = MEMORY_ERROR;
+        goto exit;
+    }
+
+    ret = wolfSSL_export_keying_material(ssl, c, req->challengeSize, ATT_CHALLENGE_LABEL, ATT_CHALLENGE_LABEL_LEN, NULL, 0, 0);
+    if (ret != WOLFSSL_SUCCESS) {
+        goto exit;
+    }
+
+    // attestation certificate
+    att = XMALLOC(ATT_BUFFER_SIZE, ssl->heap, DYNAMIC_TYPE_TLSX);
+    if (att == NULL) {
+        ret = MEMORY_ERROR;
+        goto exit;
+    }
+
+    int attLen = ssl->generateAttestation(ssl->attestationRequest, c, req->challengeSize, att);
+    if (attLen == 0) {
+        ret = WOLFSSL_FATAL_ERROR;
+        goto exit;
+    }
+
+    ATT_REQUEST att_req_resp = {
+            .challengeSize = req->challengeSize,
+            .typeSize = req->typeSize,
+            .type = req->type,
+            .dataSize = attLen,
+            .data = att,
+    };
+
+    ret = TLSX_UseAttestationRequest(&ssl->extensions, &att_req_resp, ssl->heap, TRUE);
+    // extension gets copied, so it's free to clear below buffers now
+
+exit:
+    if (c) {
+        XFREE(c, ssl->heap, DYNAMIC_TYPE_TLSX);
+    }
+    if (att) {
+        XFREE(att, ssl->heap, DYNAMIC_TYPE_TLSX);
+    }
+
+    return ret;
 }
 
 #define ATT_WRITE TLSX_AttestationRequest_Write
@@ -13860,7 +13968,7 @@ int TLSX_Parse(WOLFSSL* ssl, const byte* input, word16 length, byte msgType,
 #ifdef WOLFSSL_DEBUG_TLS
                 WOLFSSL_BUFFER(input + offset, size);
 #endif
-                if (msgType != client_hello && msgType != server_hello) {
+                if (msgType != client_hello && msgType != encrypted_extensions) {
                     WOLFSSL_ERROR_VERBOSE(EXT_NOT_ALLOWED);
                     return EXT_NOT_ALLOWED;
                 }

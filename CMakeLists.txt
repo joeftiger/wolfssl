@@ -376,7 +376,16 @@ if(WOLFSSL_REMOTE_ATTESTATION)
     if(NOT WOLFSSL_KEYING_MATERIAL)
         message(FATAL_ERROR "Remote Attestation supported only with Keying Material Exporter")
     endif()
-    list(APPEND WOLFSSL_DEFINITIONS "-DHAVE_REMOTE_ATTESTATION")
+
+    # TODO: Include proper checks for features. I will hardcode them for now.
+    list(APPEND WOLFSSL_DEFINITIONS
+            "-DWOLFSSL_ASN_TEMPLATE"
+            "-DWOLFSSL_CERT_GEN"
+            "-DWOLFSSL_KEY_GEN"
+            "-DWOLFSSL_CUSTOM_OID"
+            "-DHAVE_OID_ENCODING"
+            "-DWOLFSSL_CERT_EXT"
+            "-DHAVE_REMOTE_ATTESTATION")
 endif()
 
 # TODO: - DTLS-SCTP

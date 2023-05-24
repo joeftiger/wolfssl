@@ -7077,6 +7077,10 @@ static int SendTls13EncryptedExtensions(WOLFSSL* ssl)
                                ENCRYPT_AND_DECRYPT_SIDE, 1)) != 0)
         return ret;
 
+#ifdef HAVE_REMOTE_ATTESTATION
+
+#endif
+
     /* Setup encrypt/decrypt keys for following messages. */
 #ifdef WOLFSSL_EARLY_DATA
     if ((ret = SetKeysSide(ssl, ENCRYPT_SIDE_ONLY)) != 0)

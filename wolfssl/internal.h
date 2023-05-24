@@ -2742,6 +2742,8 @@ WOLFSSL_LOCAL int TLSX_Append(TLSX** list, TLSX_Type type,
 
 #ifdef HAVE_REMOTE_ATTESTATION
 
+WOLFSSL_LOCAL int GenerateAttestation(WOLFSSL *ssl);
+
 WOLFSSL_LOCAL int TLSX_UseAttestationRequest(TLSX** extensions, const ATT_REQUEST *req, void* heap, byte is_server);
 
 #endif
@@ -5522,7 +5524,7 @@ struct WOLFSSL {
      * @param c         the challenge
      * @param cLen      the challenge length
      * @param output    the output buffer for the generated attestation
-     * @return 0 on success
+     * @return number of written bytes. 0 if unsuccessful.
      */
     int (*generateAttestation)(const ATT_REQUEST *req, const byte *c, word16 cLen, byte *output);
 #endif /* HAVE_REMOTE_ATTESTATION */
