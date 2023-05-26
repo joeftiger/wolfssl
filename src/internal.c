@@ -15656,12 +15656,6 @@ static int DoHandShakeMsgType(WOLFSSL* ssl, byte* input, word32* inOutIdx,
         }
     }
 
-#ifdef HAVE_REMOTE_ATTESTATION
-    if (type == client_hello) {
-
-    }
-#endif /* HAVE_REMOTE_ATTESTATION */
-
     if (ssl->options.side == WOLFSSL_CLIENT_END) {
         switch (type) {
         case certificate:
