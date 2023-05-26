@@ -1872,7 +1872,7 @@ int TLSX_ALPN_GetRequest(TLSX* extensions, void** data, word16 *dataSz)
 #define ATT_BUFFER_SIZE 16384
 
 static void TLSX_AttestationRequest_FreeAll(ATT_REQUEST *req, void *heap) {
-    (void)heap;
+    (void) heap;
 
     if (req) {
         if (req->type) {
@@ -1913,8 +1913,7 @@ ATT_REQUEST *TLSX_AttRequest_NewCopy(const ATT_REQUEST *req, void *heap) {
     return req_cpy;
 }
 
-int TLSX_UseAttestationRequest(TLSX** extensions, const ATT_REQUEST *req, void* heap, byte is_server)
-{
+int TLSX_UseAttestationRequest(TLSX **extensions, const ATT_REQUEST *req, void *heap, byte is_server) {
     if (extensions == NULL) {
         return BAD_FUNC_ARG;
     }
@@ -1924,7 +1923,7 @@ int TLSX_UseAttestationRequest(TLSX** extensions, const ATT_REQUEST *req, void* 
         return MEMORY_ERROR;
     }
 
-    int ret = TLSX_Push(extensions, TLSX_ATTESTATION_REQUEST, (void *)req_cpy, heap);
+    int ret = TLSX_Push(extensions, TLSX_ATTESTATION_REQUEST, (void *) req_cpy, heap);
     if (ret != 0) {
         TLSX_AttestationRequest_FreeAll(req_cpy, heap);
         return ret;
@@ -2005,7 +2004,7 @@ static int TLSX_AttestationRequest_Parse(WOLFSSL *ssl, const byte *input, word16
     }
 
     if (msgType == client_hello || msgType == encrypted_extensions) {
-        ATT_REQUEST* req = (ATT_REQUEST*)XMALLOC(sizeof(ATT_REQUEST), ssl->heap, DYNAMIC_TYPE_TLSX);
+        ATT_REQUEST *req = (ATT_REQUEST *) XMALLOC(sizeof(ATT_REQUEST), ssl->heap, DYNAMIC_TYPE_TLSX);
         if (req == NULL) {
             ret = MEMORY_ERROR;
             goto exit;
@@ -2071,7 +2070,8 @@ static word16 TLSX_AttestationRequest_GetSize(const ATT_REQUEST *req) {
     return len;
 }
 
-static int CreateAttestationRequestResponse(WOLFSSL *ssl) {
+int GenerateAttestation(WOLFSSL *ssl) {
+    WOLFSSL_ENTER("GenerateAttestation");
     if (ssl == NULL || ssl->attestationRequest == NULL || ssl->generateAttestation == NULL) {
         return BAD_FUNC_ARG;
     }
@@ -2125,6 +2125,7 @@ exit:
         XFREE(att, ssl->heap, DYNAMIC_TYPE_TLSX);
     }
 
+    WOLFSSL_LEAVE("GenerateAttestation", ret);
     return ret;
 }
 
