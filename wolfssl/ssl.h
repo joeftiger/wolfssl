@@ -3674,6 +3674,7 @@ WOLFSSL_API void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl);
  */
 typedef struct ATT_REQUEST {
     /** The required length for the attestation challenge */
+    // TODO: This should be fixed size perhaps
     word16 challengeSize;
     /** The attestation type size */
     word16 typeSize;
@@ -3713,16 +3714,6 @@ WOLFSSL_API int wolfSSL_AttestationRequest(WOLFSSL *ssl, const ATT_REQUEST *req)
  */
 WOLFSSL_API int wolfSSL_CTX_AttestationRequest(WOLFSSL_CTX *ctx, const ATT_REQUEST *req);
 
-/*
- * Returns stored data from the Evidence Request Extension.
- *
- * RETURNS:
- * 'client': data to send to 'server'
- * 'server': data received from 'client'
- */
-// TODO: What about the data the server sent to the client?
-// WOLFSSL_API void *wolfSSL_GetEvidence(WOLFSSL *ssl);
-
 /**
  * Sets the callback for attestation verification on 'client' side.
  *
@@ -3748,6 +3739,13 @@ WOLFSSL_API int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(cons
  */
 WOLFSSL_API int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, int (*genAtt)(const ATT_REQUEST *req, const byte *c, word16 cLen, byte *output));
 
+/**
+ * Returns a received attestation request.
+ * Will be NULL if not received.
+ *
+ * @param ssl The SSL session
+ * @return received attestation request. NULL if not present.
+ */
 WOLFSSL_API const ATT_REQUEST *wolfSSL_GetAttestationRequest(WOLFSSL *ssl);
 
 #endif /* HAVE_REMOTE_ATTESTATION */
