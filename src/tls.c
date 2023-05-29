@@ -2071,14 +2071,15 @@ static word16 TLSX_AttestationRequest_GetSize(const ATT_REQUEST *req) {
 }
 
 int GenerateAttestation(WOLFSSL *ssl) {
-    WOLFSSL_ENTER("GenerateAttestation");
-    if (ssl == NULL || ssl->attestationRequest == NULL || ssl->generateAttestation == NULL) {
-        return BAD_FUNC_ARG;
-    }
-
     int ret;
     unsigned char *c = NULL;
     byte *att = NULL;
+
+    WOLFSSL_ENTER("GenerateAttestation");
+    if (ssl == NULL || ssl->attestationRequest == NULL || ssl->generateAttestation == NULL || !wolfSSL_is_server(ssl)) {
+        ret = BAD_FUNC_ARG;
+        goto exit;
+    }
 
     // attestation challenge token
     const ATT_REQUEST *req = ssl->attestationRequest;
@@ -2088,8 +2089,18 @@ int GenerateAttestation(WOLFSSL *ssl) {
         goto exit;
     }
 
-    ret = wolfSSL_export_keying_material(ssl, c, req->challengeSize, ATT_CHALLENGE_LABEL, ATT_CHALLENGE_LABEL_LEN, NULL, 0, 0);
-    if (ret != WOLFSSL_SUCCESS) {
+    // generate challenge
+    if (req->dataSize != 0) {
+        ret = wolfSSL_export_keying_material(ssl, c, req->challengeSize, ATT_CHALLENGE_LABEL, ATT_CHALLENGE_LABEL_LEN,
+                                             req->data, req->dataSize, TRUE);
+    } else {
+        ret = wolfSSL_export_keying_material(ssl, c, req->challengeSize, ATT_CHALLENGE_LABEL, ATT_CHALLENGE_LABEL_LEN,
+                                             NULL, 0, FALSE);
+    }
+    if (ret == WOLFSSL_SUCCESS) {
+        ret = 0;
+    } else {
+        ret = WOLFSSL_FATAL_ERROR;
         goto exit;
     }
 
@@ -2102,6 +2113,7 @@ int GenerateAttestation(WOLFSSL *ssl) {
 
     int attLen = ssl->generateAttestation(ssl->attestationRequest, c, req->challengeSize, att);
     if (attLen == 0) {
+        // TODO: Introduce AttestationError?
         ret = WOLFSSL_FATAL_ERROR;
         goto exit;
     }
@@ -2115,6 +2127,11 @@ int GenerateAttestation(WOLFSSL *ssl) {
     };
 
     ret = TLSX_UseAttestationRequest(&ssl->extensions, &att_req_resp, ssl->heap, TRUE);
+    if (ret == WOLFSSL_SUCCESS) {
+        ret = 0;
+    } else {
+        ret = WOLFSSL_FATAL_ERROR;
+    }
     // extension gets copied, so it's free to clear below buffers now
 
 exit:
@@ -13138,6 +13155,10 @@ int TLSX_GetResponseSize(WOLFSSL* ssl, byte msgType, word16* pLength)
         #ifdef WOLFSSL_DTLS_CID
             TURN_ON(semaphore, TLSX_ToSemaphore(TLSX_CONNECTION_ID));
         #endif /* WOLFSSL_DTLS_CID */
+#ifdef HAVE_REMOTE_ATTESTATION
+            // TODO: Needed?
+            TURN_OFF(semaphore, TLSX_ToSemaphore(TLSX_ATTESTATION_REQUEST));
+#endif
             break;
 
         #ifdef WOLFSSL_EARLY_DATA
@@ -13160,6 +13181,10 @@ int TLSX_GetResponseSize(WOLFSSL* ssl, byte msgType, word16* pLength)
             /* TODO: TLSX_SIGNED_CERTIFICATE_TIMESTAMP,
              *       TLSX_SERVER_CERTIFICATE_TYPE
              */
+#ifdef HAVE_REMOTE_ATTESTATION
+            // TODO: Needed?
+            TURN_ON(semaphore, TLSX_ToSemaphore(TLSX_ATTESTATION_REQUEST));
+#endif
             break;
     #endif
 #endif
@@ -13280,6 +13305,10 @@ int TLSX_WriteResponse(WOLFSSL *ssl, byte* output, byte msgType, word16* pOffset
         #ifdef WOLFSSL_DTLS_CID
             TURN_ON(semaphore, TLSX_ToSemaphore(TLSX_CONNECTION_ID));
         #endif /* WOLFSSL_DTLS_CID */
+        #ifdef HAVE_REMOTE_ATTESTATION
+            // TODO: Needed?
+            TURN_OFF(semaphore, TLSX_ToSemaphore(TLSX_ATTESTATION_REQUEST));
+        #endif
                 break;
 
         #ifdef WOLFSSL_EARLY_DATA
@@ -13303,6 +13332,10 @@ int TLSX_WriteResponse(WOLFSSL *ssl, byte* output, byte msgType, word16* pOffset
                 /* TODO: TLSX_SIGNED_CERTIFICATE_TIMESTAMP,
                  *       TLSX_SERVER_CERTIFICATE_TYPE
                  */
+#ifdef HAVE_REMOTE_ATTESTATION
+                // TODO: Needed?
+                TURN_ON(semaphore, TLSX_ToSemaphore(TLSX_ATTESTATION_REQUEST));
+#endif
                 break;
         #endif
     #endif

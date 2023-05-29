@@ -11131,6 +11131,15 @@ int DoTls13HandShakeMsgType(WOLFSSL* ssl, byte* input, word32* inOutIdx,
         ret = HashInput(ssl, input + inIdx, size);
     }
 
+#ifdef HAVE_REMOTE_ATTESTATION
+    // TODO: Does this belong here? It should be AFTER input hashing and before writing encrypted extensions.
+    if (ret == 0 && type == client_hello && ssl->attestationRequest) {
+        if ((ret = GenerateAttestation(ssl)) != 0) {
+            WOLFSSL_MSG("Attestation Generation failed");
+        }
+    }
+#endif /* HAVE_REMOTE_ATTESTATION */
+
     alertType = TranslateErrorToAlert(ret);
 
     if (alertType != invalid_alert) {
