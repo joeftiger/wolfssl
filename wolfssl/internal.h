@@ -2742,7 +2742,23 @@ WOLFSSL_LOCAL int TLSX_Append(TLSX** list, TLSX_Type type,
 
 #ifdef HAVE_REMOTE_ATTESTATION
 
+/**
+ * Generates an attestation certificate from the user-defined callback seeded by a challenge created by the TLS-Exporter.
+ *
+ * @param ssl The SSL/TLS object
+ * @return 0 on success. Any other value indicates an error.
+ * @see WOLFSSL->generateAttestation()
+ */
 WOLFSSL_LOCAL int GenerateAttestation(WOLFSSL *ssl);
+
+/**
+ * Verifies an attestation certificate from the user-defined callback seeded a challenge created by the TLS-Exporter.
+ *
+ * @param ssl The SSL/TLS object
+ * @return 0 on success. Any other value indicates an error.
+ * @see WOLFSSL->verifyAttestation()
+ */
+WOLFSSL_LOCAL int VerifyAttestation(WOLFSSL *ssl);
 
 WOLFSSL_LOCAL int TLSX_UseAttestationRequest(TLSX** extensions, const ATT_REQUEST *req, void* heap, byte is_server);
 

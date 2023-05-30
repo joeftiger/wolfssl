@@ -3527,7 +3527,7 @@ int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(const ATT_REQUES
     }
 
     ssl->verifyAttestation = verifyAtt;
-    return 0;
+    return SSL_SUCCESS;
 }
 
 int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, int (*genAtt)(const ATT_REQUEST *req, const byte *c, word16 cLen, byte *output)) {
@@ -3539,7 +3539,7 @@ int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, int (*genAtt)(const ATT_REQUEST
     }
 
     ssl->generateAttestation = genAtt;
-    return 0;
+    return SSL_SUCCESS;
 }
 
 const ATT_REQUEST *wolfSSL_GetAttestationRequest(WOLFSSL *ssl) {

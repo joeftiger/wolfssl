@@ -3722,7 +3722,7 @@ WOLFSSL_API int wolfSSL_CTX_AttestationRequest(WOLFSSL_CTX *ctx, const ATT_REQUE
  *                  Takes attestation data, a challenge and a challenge length as arguments.
  *                  Must return 0 on success.
  *
- * @return  0 if client, SIDE_ERROR if server, and BAD_FUNC_ARG if any param is NULL.
+ * @return  SSL_SUCCESS if client, SIDE_ERROR if server, and BAD_FUNC_ARG if any param is NULL.
  */
 WOLFSSL_API int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(const ATT_REQUEST *att, const byte *c, word16 cLen));
 
@@ -3735,7 +3735,7 @@ WOLFSSL_API int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(cons
  *                  attestation data as arguments.
  *                  Must return number of written bytes.0 if unsuccessful.
  *
- * @return  0 if server, SIDE_ERROR if client, and BAD_FUNC_ARG if any param is NULL.
+ * @return  SSL_SUCCESS if server, SIDE_ERROR if client, and BAD_FUNC_ARG if any param is NULL.
  */
 WOLFSSL_API int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, int (*genAtt)(const ATT_REQUEST *req, const byte *c, word16 cLen, byte *output));
 

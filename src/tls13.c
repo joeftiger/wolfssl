@@ -7078,7 +7078,8 @@ static int SendTls13EncryptedExtensions(WOLFSSL* ssl)
         return ret;
 
 #ifdef HAVE_REMOTE_ATTESTATION
-    // TODO: Does this belong here? It should be AFTER input hashing and before writing encrypted extensions.
+    // TODO: Does this belong here? It should be AFTER input hashing (for the TLS exporter)
+    //       and before writing encrypted extensions.
     if (ssl->attestationRequest) {
         if ((ret = GenerateAttestation(ssl)) != 0) {
             WOLFSSL_MSG("Attestation Generation failed");
@@ -9161,6 +9162,17 @@ static int DoTls13CertificateVerify(WOLFSSL* ssl, byte* input,
                 ssl->options.peerAuthGood = 1;
             }
         #endif /* !NO_RSA && WC_RSA_PSS */
+
+        #ifdef HAVE_REMOTE_ATTESTATION \
+            // TODO: Does this belong here? It should be AFTER input hashing (for the TLS exporter)
+            //       and after receiving encrypted extensions.
+            if (ssl->attestationRequest && ssl->verifyAttestation) {
+                ret = VerifyAttestation(ssl);
+                if (ret != 0) {
+                    goto exit_dcv;
+                }
+            }
+        #endif
 
             /* Advance state and proceed */
             ssl->options.asyncState = TLS_ASYNC_FINALIZE;

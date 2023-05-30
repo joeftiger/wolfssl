@@ -2118,13 +2118,7 @@ int GenerateAttestation(WOLFSSL *ssl) {
         goto exit;
     }
 
-    ATT_REQUEST att_req_resp = {
-            .challengeSize = req->challengeSize,
-            .typeSize = req->typeSize,
-            .type = req->type,
-            .dataSize = attLen,
-            .data = att,
-    };
+    ATT_REQUEST att_req_resp = {.challengeSize = req->challengeSize, .typeSize = req->typeSize, .type = req->type, .dataSize = attLen, .data = att,};
 
     ret = TLSX_UseAttestationRequest(&ssl->extensions, &att_req_resp, ssl->heap, TRUE);
     if (ret == WOLFSSL_SUCCESS) {
@@ -2134,7 +2128,7 @@ int GenerateAttestation(WOLFSSL *ssl) {
     }
     // extension gets copied, so it's free to clear below buffers now
 
-exit:
+    exit:
     if (c) {
         XFREE(c, ssl->heap, DYNAMIC_TYPE_TLSX);
     }
@@ -2143,6 +2137,57 @@ exit:
     }
 
     WOLFSSL_LEAVE("GenerateAttestation", ret);
+    return ret;
+}
+
+/**
+ * Verifies an attestation certificate from the user-defined callback seeded a challenge created by the TLS-Exporter.
+ *
+ * @param ssl The SSL/TLS object
+ * @return 0 on success. Any other value indicates an error.
+ * @see WOLFSSL->verifyAttestation()
+ */
+int VerifyAttestation(WOLFSSL *ssl) {
+    int ret;
+    unsigned char *c = NULL;
+
+    WOLFSSL_ENTER("VerifyAttestation");
+    if (!ssl || !ssl->attestationRequest || !ssl->verifyAttestation || wolfSSL_is_server(ssl)) {
+        ret = BAD_FUNC_ARG;
+        goto exit;
+    }
+
+    // attestation challenge token
+    const ATT_REQUEST *req = ssl->attestationRequest;
+    c = XMALLOC(req->challengeSize, ssl->heap, DYNAMIC_TYPE_TLSX);
+    if (!c) {
+        ret = MEMORY_ERROR;
+        goto exit;
+    }
+
+    // generate challenge
+    if (req->dataSize != 0) {
+        ret = wolfSSL_export_keying_material(ssl, c, req->challengeSize, ATT_CHALLENGE_LABEL, ATT_CHALLENGE_LABEL_LEN,
+                                             req->data, req->dataSize, TRUE);
+    } else {
+        ret = wolfSSL_export_keying_material(ssl, c, req->challengeSize, ATT_CHALLENGE_LABEL, ATT_CHALLENGE_LABEL_LEN,
+                                             NULL, 0, FALSE);
+    }
+    if (ret == WOLFSSL_SUCCESS) {
+        ret = 0;
+    } else {
+        ret = ATTESTATION_KEYING_E;
+        goto exit;
+    }
+
+    ret = ssl->verifyAttestation(req, c, req->challengeSize);
+
+exit:
+    if (c) {
+        XFREE(c, ssl->heap, DYNAMIC_TYPE_TLSX);
+    }
+
+    WOLFSSL_LEAVE("VerifyAttestation", ret);
     return ret;
 }
 
