@@ -2100,7 +2100,7 @@ int GenerateAttestation(WOLFSSL *ssl) {
     if (ret == WOLFSSL_SUCCESS) {
         ret = 0;
     } else {
-        ret = WOLFSSL_FATAL_ERROR;
+        ret = ATTESTATION_KEYING_E;
         goto exit;
     }
 
@@ -2114,7 +2114,7 @@ int GenerateAttestation(WOLFSSL *ssl) {
     int attLen = ssl->generateAttestation(ssl->attestationRequest, c, req->challengeSize, att);
     if (attLen == 0) {
         // TODO: Introduce AttestationError?
-        ret = WOLFSSL_FATAL_ERROR;
+        ret = ATTESTATION_GENERATION_E;
         goto exit;
     }
 

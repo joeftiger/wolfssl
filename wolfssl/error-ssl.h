@@ -191,8 +191,12 @@ enum wolfSSL_ErrorCodes {
     COMPRESSION_ERROR            = -502,   /* compression mismatch */
     KEY_SHARE_ERROR              = -503,   /* key share mismatch */
     POST_HAND_AUTH_ERROR         = -504,   /* client won't do post-hand auth */
-    HRR_COOKIE_ERROR             = -505    /* HRR msg cookie mismatch */
+    HRR_COOKIE_ERROR             = -505,   /* HRR msg cookie mismatch */
     /* end negotiation parameter errors only 10 for now */
+    /* add strings to wolfSSL_ERR_reason_error_string in internal.c !!!!! */
+
+    ATTESTATION_KEYING_E         = -606,   /* TLS-Exporter error during attestation keying */
+    ATTESTATION_GENERATION_E     = -607    /* attestation generation error */
     /* add strings to wolfSSL_ERR_reason_error_string in internal.c !!!!! */
 
     /* no error strings go down here, add above negotiation errors !!!! */

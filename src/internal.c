@@ -23549,6 +23549,12 @@ const char* wolfSSL_ERR_reason_error_string(unsigned long e)
     case DUPLICATE_TLS_EXT_E:
         return "Duplicate TLS extension in message.";
 
+    case ATTESTATION_KEYING_E:
+        return "Keying Binder error in attestation generation";
+
+    case ATTESTATION_GENERATION_E:
+        return "Attestation generation error in custom function";
+
     default :
         return "unknown error number";
     }
