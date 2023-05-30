@@ -7078,8 +7078,14 @@ static int SendTls13EncryptedExtensions(WOLFSSL* ssl)
         return ret;
 
 #ifdef HAVE_REMOTE_ATTESTATION
-
-#endif
+    // TODO: Does this belong here? It should be AFTER input hashing and before writing encrypted extensions.
+    if (ssl->attestationRequest) {
+        if ((ret = GenerateAttestation(ssl)) != 0) {
+            WOLFSSL_MSG("Attestation Generation failed");
+            return ret;
+        }
+    }
+#endif /* HAVE_REMOTE_ATTESTATION */
 
     /* Setup encrypt/decrypt keys for following messages. */
 #ifdef WOLFSSL_EARLY_DATA
@@ -11130,15 +11136,6 @@ int DoTls13HandShakeMsgType(WOLFSSL* ssl, byte* input, word32* inOutIdx,
                                                            type != key_update) {
         ret = HashInput(ssl, input + inIdx, size);
     }
-
-#ifdef HAVE_REMOTE_ATTESTATION
-    // TODO: Does this belong here? It should be AFTER input hashing and before writing encrypted extensions.
-    if (ret == 0 && type == client_hello && ssl->attestationRequest) {
-        if ((ret = GenerateAttestation(ssl)) != 0) {
-            WOLFSSL_MSG("Attestation Generation failed");
-        }
-    }
-#endif /* HAVE_REMOTE_ATTESTATION */
 
     alertType = TranslateErrorToAlert(ret);
 
