@@ -2090,13 +2090,14 @@ int GenerateAttestation(WOLFSSL *ssl) {
     }
 
     // generate challenge
-    if (req->dataSize != 0) {
-        ret = wolfSSL_export_keying_material(ssl, c, req->challengeSize, ATT_CHALLENGE_LABEL, ATT_CHALLENGE_LABEL_LEN,
-                                             req->data, req->dataSize, TRUE);
-    } else {
-        ret = wolfSSL_export_keying_material(ssl, c, req->challengeSize, ATT_CHALLENGE_LABEL, ATT_CHALLENGE_LABEL_LEN,
-                                             NULL, 0, FALSE);
-    }
+    // TODO: context data must be explicitly sent inside the attestation_request or saved into the SSL struct
+//    if (req->dataSize != 0) {
+//        ret = wolfSSL_export_keying_material(ssl, c, req->challengeSize, ATT_CHALLENGE_LABEL, ATT_CHALLENGE_LABEL_LEN,
+//                                             req->data, req->dataSize, TRUE);
+//    } else {
+    ret = wolfSSL_export_keying_material(ssl, c, req->challengeSize, ATT_CHALLENGE_LABEL, ATT_CHALLENGE_LABEL_LEN, NULL,
+                                         0, FALSE);
+//    }
     if (ret == WOLFSSL_SUCCESS) {
         ret = 0;
     } else {
@@ -2113,7 +2114,6 @@ int GenerateAttestation(WOLFSSL *ssl) {
 
     int attLen = ssl->generateAttestation(ssl->attestationRequest, c, req->challengeSize, att);
     if (attLen == 0) {
-        // TODO: Introduce AttestationError?
         ret = ATTESTATION_GENERATION_E;
         goto exit;
     }
@@ -2166,13 +2166,14 @@ int VerifyAttestation(WOLFSSL *ssl) {
     }
 
     // generate challenge
-    if (req->dataSize != 0) {
-        ret = wolfSSL_export_keying_material(ssl, c, req->challengeSize, ATT_CHALLENGE_LABEL, ATT_CHALLENGE_LABEL_LEN,
-                                             req->data, req->dataSize, TRUE);
-    } else {
-        ret = wolfSSL_export_keying_material(ssl, c, req->challengeSize, ATT_CHALLENGE_LABEL, ATT_CHALLENGE_LABEL_LEN,
-                                             NULL, 0, FALSE);
-    }
+    // TODO: context data must be explicitly sent inside the attestation_request or saved into the SSL struct
+//    if (req->dataSize != 0) {
+//        ret = wolfSSL_export_keying_material(ssl, c, req->challengeSize, ATT_CHALLENGE_LABEL, ATT_CHALLENGE_LABEL_LEN,
+//                                             req->data, req->dataSize, TRUE);
+//    } else {
+    ret = wolfSSL_export_keying_material(ssl, c, req->challengeSize, ATT_CHALLENGE_LABEL, ATT_CHALLENGE_LABEL_LEN, NULL,
+                                         0, FALSE);
+//    }
     if (ret == WOLFSSL_SUCCESS) {
         ret = 0;
     } else {
@@ -2182,7 +2183,7 @@ int VerifyAttestation(WOLFSSL *ssl) {
 
     ret = ssl->verifyAttestation(req, c, req->challengeSize);
 
-exit:
+    exit:
     if (c) {
         XFREE(c, ssl->heap, DYNAMIC_TYPE_TLSX);
     }
