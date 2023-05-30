@@ -3469,14 +3469,14 @@ void wolfSSL_AttestationRequest_print_ex(XFILE fp, const ATT_REQUEST *req, byte 
     fprintf(fp, "Attestation Request:\n");
 
     fprintf(fp, "    Type : %s", typeIsStr ? "" : "0x");
-    char *type = req->type;
+    byte *type = req->type;
     for (int i = 0; i < req->typeSize; i++) {
         fprintf(fp, typeIsStr ? "%c" : "%X", type[i]);
     }
     fprintf(fp, "\n");
 
     fprintf(fp, "    Data : %s", dataIsStr ? "" : "0x");
-    char *data = req->data;
+    byte *data = req->data;
     for (int i = 0; i < req->dataSize; i++) {
         fprintf(fp, dataIsStr ? "%c" : "%X", data[i]);
     }
