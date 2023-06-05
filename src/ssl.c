@@ -3458,52 +3458,53 @@ void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl)
 #ifdef HAVE_REMOTE_ATTESTATION
 
 void wolfSSL_AttestationRequest_print(XFILE fp, const ATT_REQUEST *req) {
-    return wolfSSL_AttestationRequest_print_ex(fp, req, 0, 0);
+    return wolfSSL_AttestationRequest_print_ex(fp, req, 0);
 }
 
-void wolfSSL_AttestationRequest_print_ex(XFILE fp, const ATT_REQUEST *req, byte typeIsStr, byte dataIsStr) {
-    if (fp == NULL | req == NULL) {
+void wolfSSL_AttestationRequest_print_ex(XFILE fp, const ATT_REQUEST *req, byte dataIsStr) {
+    if (!fp || !req) {
         return;
     }
 
     fprintf(fp, "Attestation Request:\n");
-
-    fprintf(fp, "    Type : %s", typeIsStr ? "" : "0x");
-    byte *type = req->type;
-    for (int i = 0; i < req->typeSize; i++) {
-        fprintf(fp, typeIsStr ? "%c" : "%X", type[i]);
+    fprintf(fp, "    Request: %d", req->is_request);
+    fprintf(fp, "    Nonce: 0x%lX\n", req->nonce);
+    fprintf(fp, "    Challenge Size: %d\n", req->challengeSize);
+    if (req->is_request) {
+        fprintf(fp, "    Type : %s", dataIsStr ? "" : "0x");
+    } else {
+        fprintf(fp, "    Attestation : %s", dataIsStr ? "" : "0x");
     }
-    fprintf(fp, "\n");
-
-    fprintf(fp, "    Data : %s", dataIsStr ? "" : "0x");
-    byte *data = req->data;
-    for (int i = 0; i < req->dataSize; i++) {
-        fprintf(fp, dataIsStr ? "%c" : "%X", data[i]);
+    byte *type = req->data;
+    for (int i = 0; i < req->size; i++) {
+        fprintf(fp, dataIsStr ? "%c" : "%X", type[i]);
     }
     fprintf(fp, "\n");
 }
 
 int wolfSSL_AttestationRequest(WOLFSSL *ssl, const ATT_REQUEST *req) {
+    int ret;
     WOLFSSL_ENTER("wolfSSL_AttestationRequest");
 
     if (ssl == NULL) {
-        return BAD_FUNC_ARG;
+        ret = BAD_FUNC_ARG;
+    } else {
+        ret = TLSX_UseAttestationRequest(&ssl->extensions, req, ssl->heap, wolfSSL_is_server(ssl));
     }
-
-    int ret = TLSX_UseAttestationRequest(&ssl->extensions, req, ssl->heap, wolfSSL_is_server(ssl));
 
     WOLFSSL_LEAVE("wolfSSL_AttestationRequest", ret);
     return ret;
 }
 
 int wolfSSL_CTX_AttestationRequest(WOLFSSL_CTX *ctx, const ATT_REQUEST *req) {
+    int ret;
     WOLFSSL_ENTER("wolfSSL_CTX_AttestationRequest");
 
     if (ctx == NULL) {
-        return BAD_FUNC_ARG;
+        ret = BAD_FUNC_ARG;
+    } else {
+        ret = TLSX_UseAttestationRequest(&ctx->extensions, req, ctx->heap, ctx->method->side == WOLFSSL_SERVER_END);
     }
-
-    int ret = TLSX_UseAttestationRequest(&ctx->extensions, req, ctx->heap, ctx->method->side == WOLFSSL_SERVER_END);
 
     WOLFSSL_LEAVE("wolfSSL_CTX_AttestationRequest", ret);
     return ret;

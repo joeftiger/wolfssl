@@ -3670,19 +3670,24 @@ WOLFSSL_API void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl);
 // TODO: WIP definitions
 
 /**
- * Attestation Request
+ * Attestation Request data type.
  */
 typedef struct ATT_REQUEST {
-    /** The required length for the attestation challenge */
-    // TODO: This should be fixed size perhaps
+    /** Is this union a request or a response (from either client or server) */
+    word8 is_request;
+    /** The nonce for challenge generation */
+    word64 nonce;
+    /** The challenge size required for attestation verification */
+    // TODO: This could be fixed size if the types are well-defined and have well-defined challenge sizes.
+    //       However, this would need to be managed by IANA, e.g.
+    //       The type can then also be a simple enumeration for further simplicity.
     word16 challengeSize;
-    /** The attestation type size */
-    word16 typeSize;
-    /** The attestation type */
-    void *type;
-    /** The attestation data size */
-    word16 dataSize;
-    /** The attestation data */
+    /** The .data size */
+    word16 size;
+    /**
+     * If request: attestation type
+     * If response: attestation certificate
+     */
     void *data;
 } ATT_REQUEST;
 
@@ -3698,11 +3703,10 @@ WOLFSSL_API void wolfSSL_AttestationRequest_print(XFILE fp, const ATT_REQUEST *r
  * Prints an attestation request to the given file.
  * @param fp                The FILE pointer to print to
  * @param req               The attestation request to print
- * @param typeIsStr         Whether the attestation type should be printed as a string
- * @param dataIsStr         Whether the attestation data should be printed as a string
+ * @param dataIsStr         Whether the attestation type / certificate should be printed as a string
  * @see wolfSSL_AttestationRequest_print
  */
-WOLFSSL_API void wolfSSL_AttestationRequest_print_ex(XFILE fp, const ATT_REQUEST *req, byte typeIsStr, byte dataIsStr);
+WOLFSSL_API void wolfSSL_AttestationRequest_print_ex(XFILE fp, const ATT_REQUEST *req, byte dataIsStr);
 
 /**
  * Attestation Request extension.
@@ -3733,7 +3737,7 @@ WOLFSSL_API int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(cons
  * @param genAtt    The attestation generator.
  *                  Takes an attestation request, a challenge, a challenge length and a buffer for generated
  *                  attestation data as arguments.
- *                  Must return number of written bytes.0 if unsuccessful.
+ *                  Must return number of written bytes. Negative number if unsuccessful.
  *
  * @return  SSL_SUCCESS if server, SIDE_ERROR if client, and BAD_FUNC_ARG if any param is NULL.
  */

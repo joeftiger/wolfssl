@@ -5540,7 +5540,7 @@ struct WOLFSSL {
      * @param c         the challenge
      * @param cLen      the challenge length
      * @param output    the output buffer for the generated attestation
-     * @return number of written bytes. 0 if unsuccessful.
+     * @return number of written bytes. Negative number if unsuccessful.
      */
     int (*generateAttestation)(const ATT_REQUEST *req, const byte *c, word16 cLen, byte *output);
 #endif /* HAVE_REMOTE_ATTESTATION */
