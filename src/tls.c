@@ -1958,7 +1958,7 @@ static word16 TLSX_AttestationRequest_Write(const ATT_REQUEST *req, byte *output
 
     word16 i = 0;
 
-    if (!req) {
+    if (!req || !req->data) {
         WOLFSSL_LEAVE("TLSX_AttestationRequest_Write", BAD_FUNC_ARG);
         return BAD_FUNC_ARG;
     }
@@ -1969,7 +1969,7 @@ static word16 TLSX_AttestationRequest_Write(const ATT_REQUEST *req, byte *output
         return SANITY_MSG_E;
     }
 
-    c64toa((const w64wrapper *) req->nonce, &output[i]);
+    c64toa((const w64wrapper *) &req->nonce, &output[i]);
     i += OPAQUE64_LEN;
 
     c16toa(req->challengeSize, &output[i]);
@@ -2018,7 +2018,7 @@ static int TLSX_AttestationRequest_Parse(WOLFSSL *ssl, const byte *input, word16
     }
 
     ATT_REQUEST *req = XMALLOC(sizeof(ATT_REQUEST), ssl->heap, DYNAMIC_TYPE_TLSX);
-    req->is_request = !wolfSSL_is_server(ssl);
+    req->is_request = wolfSSL_is_server(ssl);
 
     ato64(&input[i], (w64wrapper *) &req->nonce);
     i += OPAQUE64_LEN;
@@ -2046,8 +2046,11 @@ static int TLSX_AttestationRequest_Parse(WOLFSSL *ssl, const byte *input, word16
     if (i != length) {
         WOLFSSL_ERROR_VERBOSE(SANITY_MSG_E);
         ret = SANITY_MSG_E;
+        goto exit;
     }
 #endif
+
+    ssl->attestationRequest = req;
 
     exit:
     WOLFSSL_LEAVE("TLSX_AttestationRequest_Parse", ret);
@@ -2060,7 +2063,7 @@ static word16 TLSX_AttestationRequest_GetSize(const ATT_REQUEST *req) {
 
     len += OPAQUE64_LEN;    // nonce field
     len += OPAQUE16_LEN;    // challengeSize field
-    len += OPAQUE8_LEN;     // size field
+    len += OPAQUE16_LEN;     // size field
     len += req->size;       // type/attestation data
 
     WOLFSSL_LEAVE("TLSX_AttestationRequest_GetSize", len);
