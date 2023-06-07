@@ -5527,22 +5527,20 @@ struct WOLFSSL {
     /** For attestation verification.
      *
      * @param att   the attestation data
-     * @param c     the challenge
-     * @param cLen  the challenge length
+     * @param c     the challenge (att.challengeSize)
      * @return 0 on success
      */
-    int (*verifyAttestation)(const ATT_REQUEST *att, const byte *c, word16 cLen);
+    int (*verifyAttestation)(const ATT_REQUEST *att, const byte *c);
     ATT_REQUEST *attestationRequest;
     /**
      * For attestation generation.
      *
      * @param req       the attestation request
-     * @param c         the challenge
-     * @param cLen      the challenge length
+     * @param c         the challenge (att.challengeSize)
      * @param output    the output buffer for the generated attestation
      * @return number of written bytes. Negative number if unsuccessful.
      */
-    int (*generateAttestation)(const ATT_REQUEST *req, const byte *c, word16 cLen, byte *output);
+    int (*generateAttestation)(const ATT_REQUEST *req, const byte *c, byte *output);
 #endif /* HAVE_REMOTE_ATTESTATION */
 };
 

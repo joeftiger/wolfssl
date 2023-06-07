@@ -3519,7 +3519,7 @@ int wolfSSL_CTX_AttestationRequest(WOLFSSL_CTX *ctx, const ATT_REQUEST *req) {
     }
 }*/
 
-int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(const ATT_REQUEST *att, const byte *c, word16 cLen)) {
+int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(const ATT_REQUEST *att, const byte *c)) {
     if (ssl == NULL || verifyAtt == NULL) {
         return BAD_FUNC_ARG;
     }
@@ -3531,7 +3531,7 @@ int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(const ATT_REQUES
     return SSL_SUCCESS;
 }
 
-int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, int (*genAtt)(const ATT_REQUEST *req, const byte *c, word16 cLen, byte *output)) {
+int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, int (*genAtt)(const ATT_REQUEST *req, const byte *c, byte *output)) {
     if (ssl == NULL || genAtt == NULL) {
         return BAD_FUNC_ARG;
     }

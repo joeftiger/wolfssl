@@ -2073,7 +2073,7 @@ static word16 TLSX_AttestationRequest_GetSize(const ATT_REQUEST *req) {
 int GenerateAttestation(WOLFSSL *ssl) {
     int ret = 0;
     unsigned char *c = NULL;
-    byte *att = NULL;
+    byte *att_buffer = NULL;
 
     WOLFSSL_ENTER("GenerateAttestation");
     if (!ssl || !ssl->attestationRequest || !ssl->generateAttestation || !wolfSSL_is_server(ssl) ||
@@ -2098,19 +2098,19 @@ int GenerateAttestation(WOLFSSL *ssl) {
     }
 
     // attestation certificate
-    att = XMALLOC(ATT_BUFFER_SIZE, ssl->heap, DYNAMIC_TYPE_TLSX);
-    if (!att) {
+    att_buffer = XMALLOC(ATT_BUFFER_SIZE, ssl->heap, DYNAMIC_TYPE_TLSX);
+    if (!att_buffer) {
         ret = MEMORY_ERROR;
         goto exit;
     }
 
-    int attSize = ssl->generateAttestation(ssl->attestationRequest, c, req->challengeSize, att);
+    int attSize = ssl->generateAttestation(ssl->attestationRequest, c, att_buffer);
     if (attSize < 0) {
         ret = ATTESTATION_GENERATION_E;
         goto exit;
     }
 
-    ATT_REQUEST response = {.is_request = FALSE, .nonce = req->nonce, .challengeSize = req->challengeSize, .size = attSize, .data = att,};
+    ATT_REQUEST response = {.is_request = FALSE, .nonce = req->nonce, .challengeSize = req->challengeSize, .size = attSize, .data = att_buffer,};
 
     if (TLSX_UseAttestationRequest(&ssl->extensions, &response, ssl->heap, TRUE) != WOLFSSL_SUCCESS) {
         ret = WOLFSSL_FATAL_ERROR;
@@ -2121,8 +2121,8 @@ int GenerateAttestation(WOLFSSL *ssl) {
     if (c) {
         XFREE(c, ssl->heap, DYNAMIC_TYPE_TLSX);
     }
-    if (att) {
-        XFREE(att, ssl->heap, DYNAMIC_TYPE_TLSX);
+    if (att_buffer) {
+        XFREE(att_buffer, ssl->heap, DYNAMIC_TYPE_TLSX);
     }
 
     WOLFSSL_LEAVE("GenerateAttestation", ret);
@@ -2138,7 +2138,7 @@ int GenerateAttestation(WOLFSSL *ssl) {
  */
 int VerifyAttestation(WOLFSSL *ssl) {
     int ret = 0;
-    unsigned char *c = NULL;
+    unsigned char *challenge_buffer = NULL;
 
     WOLFSSL_ENTER("VerifyAttestation");
     if (!ssl || !ssl->attestationRequest || !ssl->verifyAttestation || wolfSSL_is_server(ssl) ||
@@ -2149,24 +2149,24 @@ int VerifyAttestation(WOLFSSL *ssl) {
 
     // attestation challenge token
     const ATT_REQUEST *req = ssl->attestationRequest;
-    c = XMALLOC(req->challengeSize, ssl->heap, DYNAMIC_TYPE_TLSX);
-    if (!c) {
+    challenge_buffer = XMALLOC(req->challengeSize, ssl->heap, DYNAMIC_TYPE_TLSX);
+    if (!challenge_buffer) {
         ret = MEMORY_ERROR;
         goto exit;
     }
 
     // generate challenge
-    if (wolfSSL_export_keying_material(ssl, c, req->challengeSize, ATT_CHALLENGE_LABEL, ATT_CHALLENGE_LABEL_LEN,
+    if (wolfSSL_export_keying_material(ssl, challenge_buffer, req->challengeSize, ATT_CHALLENGE_LABEL, ATT_CHALLENGE_LABEL_LEN,
                                        (const unsigned char *) &req->nonce, OPAQUE64_LEN, TRUE) != WOLFSSL_SUCCESS) {
         ret = ATTESTATION_KEYING_E;
         goto exit;
     }
 
-    ret = ssl->verifyAttestation(req, c, req->challengeSize);
+    ret = ssl->verifyAttestation(req, challenge_buffer);
 
     exit:
-    if (c) {
-        XFREE(c, ssl->heap, DYNAMIC_TYPE_TLSX);
+    if (challenge_buffer) {
+        XFREE(challenge_buffer, ssl->heap, DYNAMIC_TYPE_TLSX);
     }
 
     WOLFSSL_LEAVE("VerifyAttestation", ret);
