@@ -3467,7 +3467,7 @@ void wolfSSL_AttestationRequest_print_ex(XFILE fp, const ATT_REQUEST *req, byte 
     }
 
     fprintf(fp, "Attestation Request:\n");
-    fprintf(fp, "    Request: %d", req->is_request);
+    fprintf(fp, "    Request: %d\n", req->is_request);
     fprintf(fp, "    Nonce: 0x%lX\n", req->nonce);
     fprintf(fp, "    Challenge Size: %d\n", req->challengeSize);
     if (req->is_request) {
