@@ -1926,7 +1926,7 @@ int TLSX_UseAttestationRequest(TLSX **extensions, const ATT_REQUEST *req, void *
         return MEMORY_ERROR;
     }
 
-    int ret = TLSX_Push(extensions, TLSX_ATTESTATION_REQUEST, (void *) req_cpy, heap);
+    int ret = TLSX_Push(extensions, TLSX_ATTESTATION_REQUEST, req_cpy, heap);
     if (ret != 0) {
         TLSX_AttestationRequest_FreeAll(req_cpy, heap);
         return ret;
@@ -2072,7 +2072,7 @@ static word16 TLSX_AttestationRequest_GetSize(const ATT_REQUEST *req) {
 
 int GenerateAttestation(WOLFSSL *ssl) {
     int ret = 0;
-    unsigned char *c = NULL;
+    byte *c = NULL;
     byte *att_buffer = NULL;
 
     WOLFSSL_ENTER("GenerateAttestation");
@@ -2104,18 +2104,19 @@ int GenerateAttestation(WOLFSSL *ssl) {
         goto exit;
     }
 
-    int attSize = ssl->generateAttestation(ssl->attestationRequest, c, att_buffer);
+    const int attSize = ssl->generateAttestation(ssl->attestationRequest, c, att_buffer);
     if (attSize < 0) {
         ret = ATTESTATION_GENERATION_E;
         goto exit;
     }
 
-    ATT_REQUEST response = {.is_request = FALSE, .nonce = req->nonce, .challengeSize = req->challengeSize, .size = attSize, .data = att_buffer,};
+    const ATT_REQUEST response = {.is_request = FALSE, .nonce = req->nonce, .challengeSize = req->challengeSize, .size = attSize, .data = att_buffer,};
 
-    if (TLSX_UseAttestationRequest(&ssl->extensions, &response, ssl->heap, TRUE) != WOLFSSL_SUCCESS) {
-        ret = WOLFSSL_FATAL_ERROR;
+    if ((ret = wolfSSL_AttestationRequest(ssl, &response)) == WOLFSSL_SUCCESS) {
+        // reset to 0 as WOLFSSL_SUCCESS is not zero
+        ret = 0;
     }
-    // extension gets copied, so it's free to clear below buffers now
+    // extension data gets copied, so it's free to clear below buffers now
 
     exit:
     if (c) {
