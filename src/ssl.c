@@ -3498,20 +3498,6 @@ int wolfSSL_AttestationRequest(WOLFSSL *ssl, const ATT_REQUEST *req) {
     return ret;
 }
 
-int wolfSSL_CTX_AttestationRequest(WOLFSSL_CTX *ctx, const ATT_REQUEST *req) {
-    int ret;
-    WOLFSSL_ENTER("wolfSSL_CTX_AttestationRequest");
-
-    if (ctx == NULL) {
-        ret = BAD_FUNC_ARG;
-    } else {
-        ret = TLSX_UseAttestationRequest(&ctx->extensions, req, ctx->heap, ctx->method->side == WOLFSSL_SERVER_END);
-    }
-
-    WOLFSSL_LEAVE("wolfSSL_CTX_AttestationRequest", ret);
-    return ret;
-}
-
 /*void *wolfSSL_GetEvidence(WOLFSSL *ssl) {
     TLSX *ext = TLSX_Find(ssl->extensions, TLSX_ATTESTATION_REQUEST);
     if (ext == NULL) {
@@ -3521,7 +3507,7 @@ int wolfSSL_CTX_AttestationRequest(WOLFSSL_CTX *ctx, const ATT_REQUEST *req) {
     }
 }*/
 
-int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(const ATT_REQUEST *att, const byte *c)) {
+int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, VerifyAttCallback verifyAtt) {
     if (ssl == NULL || verifyAtt == NULL) {
         return BAD_FUNC_ARG;
     }
@@ -3533,7 +3519,7 @@ int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(const ATT_REQUES
     return SSL_SUCCESS;
 }
 
-int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, int (*genAtt)(const ATT_REQUEST *req, const byte *c, byte *output)) {
+int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, GenAttCallback genAtt) {
     if (ssl == NULL || genAtt == NULL) {
         return BAD_FUNC_ARG;
     }

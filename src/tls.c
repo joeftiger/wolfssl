@@ -1868,10 +1868,6 @@ int TLSX_ALPN_GetRequest(TLSX* extensions, void** data, word16 *dataSz)
 
 #ifdef HAVE_REMOTE_ATTESTATION
 
-#define ATT_CHALLENGE_LABEL "Remote Attestation"
-#define ATT_CHALLENGE_LABEL_LEN strlen(ATT_CHALLENGE_LABEL)
-#define ATT_BUFFER_SIZE 16384
-
 static void TLSX_AttestationRequest_FreeAll(ATT_REQUEST *req, void *heap) {
     (void) heap;
 

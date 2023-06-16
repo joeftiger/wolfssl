@@ -3669,6 +3669,10 @@ WOLFSSL_API void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl);
 #ifdef HAVE_REMOTE_ATTESTATION
 // TODO: WIP definitions
 
+#define ATT_CHALLENGE_LABEL "Remote Attestation"
+#define ATT_CHALLENGE_LABEL_LEN strlen(ATT_CHALLENGE_LABEL)
+#define ATT_BUFFER_SIZE 16384
+
 /**
  * Attestation Request data type.
  */
@@ -3690,6 +3694,26 @@ typedef struct ATT_REQUEST {
      */
     void *data;
 } ATT_REQUEST;
+
+/**
+ * The attestation generation callback.
+ *
+ * @param req       The attestation request to generate data from
+ * @param c         The challenge (from TLS-exporter) to create a fresh attestation certificate.
+ *                  Its length can be inferred by the attestation field `challengeSize`.
+ * @param output    The output buffer to store the attestation data.
+ *                  Its length is `ATT_BUFFER_SIZE`:
+ * @return Must be number of written bytes. Negative number if unsuccessful.
+ */
+typedef int (*GenAttCallback)(const ATT_REQUEST *req, const byte *c, byte *output);
+/**
+ * The attestation verify callback.
+ * @param att   The attestation-/certificate data
+ * @param c     The re-created challenge used for the attestation
+ *              Its length can be inferred by the attestation field `challengeSize`.
+ * @return Must be 0 on success.
+ */
+typedef int (*VerifyAttCallback)(const ATT_REQUEST *att, const byte *c);
 
 /**
  * Prints an attestation request to the given file.
@@ -3714,42 +3738,29 @@ WOLFSSL_API void wolfSSL_AttestationRequest_print_ex(XFILE fp, const ATT_REQUEST
 WOLFSSL_API int wolfSSL_AttestationRequest(WOLFSSL *ssl, const ATT_REQUEST *req);
 
 /**
- * Attestation Request extension.
- */
-WOLFSSL_API int wolfSSL_CTX_AttestationRequest(WOLFSSL_CTX *ctx, const ATT_REQUEST *req);
-
-/**
  * Sets the callback for attestation verification on 'client' side.
  *
  * @param ssl       The SSL session
  * @param verifyAtt The attestation verify callback.
- *                  Takes attestation data and a challenge as arguments.
- *                  The challenge length is inferred by the attestation field `challengeSize`.
- *                  Must return 0 on success.
- *
- * @return  SSL_SUCCESS if client, SIDE_ERROR if server, and BAD_FUNC_ARG if any param is NULL.
+ * @return SSL_SUCCESS if client, SIDE_ERROR if server, and BAD_FUNC_ARG if any param is NULL.
  */
-WOLFSSL_API int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, int (*verifyAtt)(const ATT_REQUEST *att, const byte *c));
+WOLFSSL_API int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, VerifyAttCallback verifyAtt);
 
 /**
  * Sets the callback for attestation generation on 'server' side.
  *
  * @param ssl       The SSL session
  * @param genAtt    The attestation generator.
- *                  Takes an attestation request, a challenge, and a buffer for generated attestation data as arguments.
- *                  The challenge length is inferred by the attestation field `challengeSize`.
- *                  Must return number of written bytes. Negative number if unsuccessful.
- *
- * @return  SSL_SUCCESS if server, SIDE_ERROR if client, and BAD_FUNC_ARG if any param is NULL.
+ * @return SSL_SUCCESS if server, SIDE_ERROR if client, and BAD_FUNC_ARG if any param is NULL.
  */
-WOLFSSL_API int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, int (*genAtt)(const ATT_REQUEST *req, const byte *c, byte *output));
+WOLFSSL_API int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, GenAttCallback genAtt);
 
 /**
  * Returns a received attestation request.
  * Will be NULL if not received.
  *
  * @param ssl The SSL session
- * @return received attestation request. NULL if not present.
+ * @return received attestation request data. NULL if not present.
  */
 WOLFSSL_API const ATT_REQUEST *wolfSSL_GetAttestationRequest(WOLFSSL *ssl);
 
