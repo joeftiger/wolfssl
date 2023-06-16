@@ -3669,7 +3669,7 @@ WOLFSSL_API void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl);
 #ifdef HAVE_REMOTE_ATTESTATION
 // TODO: WIP definitions
 
-#define ATT_CHALLENGE_LABEL "Remote Attestation"
+#define ATT_CHALLENGE_LABEL "EXPORTER: Remote Attestation"
 #define ATT_CHALLENGE_LABEL_LEN strlen(ATT_CHALLENGE_LABEL)
 #define ATT_BUFFER_SIZE 16384
 
