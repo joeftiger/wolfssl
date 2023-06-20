@@ -11257,7 +11257,6 @@ void TLSX_FreeAll(TLSX* list, void* heap)
                 ATT_FREE_ALL(extension->data, heap);
                 break;
 #endif
-
 #ifdef HAVE_SNI
             case TLSX_SERVER_NAME:
                 SNI_FREE_ALL((SNI*)extension->data, heap);
@@ -11423,7 +11422,6 @@ static int TLSX_GetSize(TLSX* list, byte* semaphore, byte msgType,
                     length += ATT_GET_SIZE();
                 break;
 #endif
-
 #ifdef HAVE_SNI
             case TLSX_SERVER_NAME:
                 /* SNI only sends the name on the request. */
@@ -13312,18 +13310,17 @@ int TLSX_Parse(WOLFSSL* ssl, const byte* input, word16 length, byte msgType,
 #ifdef HAVE_REMOTE_ATTESTATION
             case TLSX_ATTESTATION_REQUEST:
                 WOLFSSL_MSG("Attestation Request extension received");
-            #ifdef WOLFSSL_DEBUG_TLS
+#ifdef WOLFSSL_DEBUG_TLS
                 WOLFSSL_BUFFER(input + offset, size);
-            #endif
-
-#ifdef WOLFSSL_TLS13
-                if (!IsAtLeastTLSv1_3(ssl->version) || msgType != client_hello || msgType != encrypted_extensions) {
-                        return EXT_NOT_ALLOWED;
-                }
 #endif
+                if (msgType != client_hello && msgType != encrypted_extensions) {
+                    WOLFSSL_ERROR_VERBOSE(EXT_NOT_ALLOWED);
+                    return EXT_NOT_ALLOWED;
+                }
+
                 ret = ATT_PARSE(ssl, input + offset, size, msgType);
                 break;
-#endif
+#endif /* HAVE_REMOTE_ATTESTATION */
 #ifdef HAVE_SNI
             case TLSX_SERVER_NAME:
                 WOLFSSL_MSG("SNI extension received");
