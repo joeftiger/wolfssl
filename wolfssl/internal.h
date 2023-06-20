@@ -2609,7 +2609,7 @@ typedef enum {
     #endif
 #endif
 #ifdef HAVE_REMOTE_ATTESTATION
-    TLSX_ATTESTATION_REQUEST           = 0xAA00, /* remote attestation, arbitrary number for now */
+    TLSX_ATTESTATION_REQUEST        = 0x0040, /* remote attestation, arbitrary number for now */
 #endif
     TLSX_RENEGOTIATION_INFO         = 0xff01,
 #ifdef WOLFSSL_QUIC
