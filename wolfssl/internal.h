@@ -2746,7 +2746,7 @@ WOLFSSL_LOCAL int TLSX_Append(TLSX** list, TLSX_Type type,
  * Generates an attestation certificate from the user-defined callback seeded by a challenge created by the TLS-Exporter.
  *
  * @param ssl The SSL/TLS object
- * @return 0 on success. Any other value indicates an error.
+ * @return 0 on success. ATTESTATION_TYPE_SUPPORT_E on unsupported attestation type. Any other value indicates an error.
  * @see WOLFSSL->generateAttestation()
  */
 WOLFSSL_LOCAL int GenerateAttestation(WOLFSSL *ssl);

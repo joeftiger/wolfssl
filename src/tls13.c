@@ -88,6 +88,7 @@
  *    Default behavior is to return a signed 64-bit value.
  */
 
+#include "wolfssl/ssl.h"
 #ifdef HAVE_CONFIG_H
     #include <config.h>
 #endif
@@ -7082,7 +7083,10 @@ static int SendTls13EncryptedExtensions(WOLFSSL* ssl)
     //       and before writing encrypted extensions.
     if (ssl->attestationRequest) {
         if ((ret = GenerateAttestation(ssl)) != 0) {
-            WOLFSSL_MSG("Attestation Generation failed");
+            if (ret == ATTESTATION_TYPE_SUPPORT_E) {
+                SendAlert(ssl, alert_fatal, unsupported_attestation);
+                WOLFSSL_ERROR_VERBOSE(ATTESTATION_TYPE_SUPPORT_E);
+            }
             return ret;
         }
     }

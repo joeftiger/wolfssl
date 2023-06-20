@@ -2099,6 +2099,10 @@ int GenerateAttestation(WOLFSSL *ssl) {
     }
 
     const int attSize = ssl->generateAttestation(ssl->attestationRequest, c, att_buffer);
+    if (attSize == ATTESTATION_TYPE_SUPPORT_E) {
+        ret = ATTESTATION_TYPE_SUPPORT_E;
+        goto exit;
+    }
     if (attSize < 0) {
         ret = ATTESTATION_GENERATION_E;
         goto exit;
