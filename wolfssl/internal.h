@@ -2608,10 +2608,10 @@ typedef enum {
     TLSX_KEY_QUIC_TP_PARAMS         = 0x0039, /* RFC 9001, ch. 8.2 */
     #endif
 #endif
-    TLSX_RENEGOTIATION_INFO         = 0xff01,
 #ifdef HAVE_REMOTE_ATTESTATION
-    TLSX_ATTESTATION_REQUEST         = 0xffaa, /* arbitrary number */
+    TLSX_ATTESTATION_REQUEST         = 0x0040, /* arbitrary number */
 #endif
+    TLSX_RENEGOTIATION_INFO         = 0xff01,
 #ifdef WOLFSSL_QUIC
     TLSX_KEY_QUIC_TP_PARAMS_DRAFT   = 0xffa5, /* from draft-ietf-quic-tls-27 */
 #endif
