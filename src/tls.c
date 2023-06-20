@@ -21,8 +21,6 @@
 
 
 
-#include "wolfssl/wolfcrypt/error-crypt.h"
-#include "wolfssl/wolfcrypt/logging.h"
 #ifdef HAVE_CONFIG_H
     #include <config.h>
 #endif

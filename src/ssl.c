@@ -3498,15 +3498,6 @@ int wolfSSL_AttestationRequest(WOLFSSL *ssl, const ATT_REQUEST *req) {
     return ret;
 }
 
-/*void *wolfSSL_GetEvidence(WOLFSSL *ssl) {
-    TLSX *ext = TLSX_Find(ssl->extensions, TLSX_ATTESTATION_REQUEST);
-    if (ext == NULL) {
-        return NULL;
-    } else {
-        return ext->data;
-    }
-}*/
-
 int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, VerifyAttCallback verifyAtt) {
     if (ssl == NULL || verifyAtt == NULL) {
         return BAD_FUNC_ARG;
