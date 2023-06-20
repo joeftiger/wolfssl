@@ -13001,9 +13001,6 @@ int TLSX_WriteRequest(WOLFSSL* ssl, byte* output, byte msgType, word16* pOffset)
          */
         TURN_ON(semaphore, TLSX_ToSemaphore(TLSX_PRE_SHARED_KEY));
     #endif
-    #ifdef HAVE_REMOTE_ATTESTATION
-        TURN_OFF(semaphore, TLSX_ToSemaphore(TLSX_ATTESTATION_REQUEST));
-    #endif
 #endif /* WOLFSSL_TLS13 */
     #if defined(HAVE_CERTIFICATE_STATUS_REQUEST) \
      || defined(HAVE_CERTIFICATE_STATUS_REQUEST_V2)
@@ -13181,10 +13178,6 @@ int TLSX_GetResponseSize(WOLFSSL* ssl, byte msgType, word16* pLength)
         #ifdef WOLFSSL_DTLS_CID
             TURN_ON(semaphore, TLSX_ToSemaphore(TLSX_CONNECTION_ID));
         #endif /* WOLFSSL_DTLS_CID */
-#ifdef HAVE_REMOTE_ATTESTATION
-            // TODO: Needed?
-            TURN_OFF(semaphore, TLSX_ToSemaphore(TLSX_ATTESTATION_REQUEST));
-#endif
             break;
 
         #ifdef WOLFSSL_EARLY_DATA
@@ -13207,10 +13200,10 @@ int TLSX_GetResponseSize(WOLFSSL* ssl, byte msgType, word16* pLength)
             /* TODO: TLSX_SIGNED_CERTIFICATE_TIMESTAMP,
              *       TLSX_SERVER_CERTIFICATE_TYPE
              */
-#ifdef HAVE_REMOTE_ATTESTATION
-            // TODO: Needed?
-            TURN_ON(semaphore, TLSX_ToSemaphore(TLSX_ATTESTATION_REQUEST));
-#endif
+//#ifdef HAVE_REMOTE_ATTESTATION
+//            // TODO: Needed?
+//            TURN_ON(semaphore, TLSX_ToSemaphore(TLSX_ATTESTATION_REQUEST));
+//#endif
             break;
     #endif
 #endif
@@ -13331,10 +13324,6 @@ int TLSX_WriteResponse(WOLFSSL *ssl, byte* output, byte msgType, word16* pOffset
         #ifdef WOLFSSL_DTLS_CID
             TURN_ON(semaphore, TLSX_ToSemaphore(TLSX_CONNECTION_ID));
         #endif /* WOLFSSL_DTLS_CID */
-        #ifdef HAVE_REMOTE_ATTESTATION
-            // TODO: Needed?
-            TURN_OFF(semaphore, TLSX_ToSemaphore(TLSX_ATTESTATION_REQUEST));
-        #endif
                 break;
 
         #ifdef WOLFSSL_EARLY_DATA
@@ -13358,10 +13347,6 @@ int TLSX_WriteResponse(WOLFSSL *ssl, byte* output, byte msgType, word16* pOffset
                 /* TODO: TLSX_SIGNED_CERTIFICATE_TIMESTAMP,
                  *       TLSX_SERVER_CERTIFICATE_TYPE
                  */
-#ifdef HAVE_REMOTE_ATTESTATION
-                // TODO: Needed?
-                TURN_ON(semaphore, TLSX_ToSemaphore(TLSX_ATTESTATION_REQUEST));
-#endif
                 break;
         #endif
     #endif
