@@ -18736,8 +18736,8 @@ const char* AlertTypeToString(int type)
 
         case unsupported_attestation:
         {
-            static const char unsupported_evidence_str[] = "unsupported_attestation";
-            return unsupported_evidence_str;
+            static const char unsupported_attestation_str[] = "unsupported_attestation";
+            return unsupported_attestation_str;
         }
 
         case no_application_protocol:
