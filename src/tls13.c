@@ -88,7 +88,6 @@
  *    Default behavior is to return a signed 64-bit value.
  */
 
-#include "wolfssl/ssl.h"
 #ifdef HAVE_CONFIG_H
     #include <config.h>
 #endif

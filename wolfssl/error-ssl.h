@@ -197,7 +197,7 @@ enum wolfSSL_ErrorCodes {
 
     ATTESTATION_KEYING_E         = -606,   /* TLS-Exporter error during attestation keying */
     ATTESTATION_GENERATION_E     = -607,   /* attestation generation error */
-    ATTESTATION_TYPE_SUPPORT_E   = -608,   /* unsupported attestation type error */
+    ATTESTATION_TYPE_SUPPORT_E   = -608    /* unsupported attestation type error */
     /* add strings to wolfSSL_ERR_reason_error_string in internal.c !!!!! */
 
     /* no error strings go down here, add above negotiation errors !!!! */
