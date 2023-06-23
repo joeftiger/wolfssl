@@ -2760,6 +2760,16 @@ WOLFSSL_LOCAL int GenerateAttestation(WOLFSSL *ssl);
  */
 WOLFSSL_LOCAL int VerifyAttestation(WOLFSSL *ssl);
 
+/**
+ * Creates a copy of the given attestation request.
+ * (In order to have the memory managed by wolfSSL alone)
+ *
+ * @param req   The request to clone
+ * @param heap  The heap to use
+ * @return the pointer to the new clone (if successful)
+ */
+WOLFSSL_LOCAL ATT_REQUEST *TLSX_AttRequest_NewCopy(const ATT_REQUEST *req, void *heap);
+
 WOLFSSL_LOCAL int TLSX_UseAttestationRequest(TLSX** extensions, const ATT_REQUEST *req, void* heap, byte is_server);
 
 #endif
