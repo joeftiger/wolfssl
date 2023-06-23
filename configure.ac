@@ -5157,6 +5157,20 @@ then
     AM_CFLAGS="$AM_CFLAGS -DHAVE_EXTENDED_MASTER"
 fi
 
+# Remote Attestation Extension
+AC_ARG_ENABLE([ra],
+    [AS_HELP_STRING([--enable-ra],[Enable wolfSSL Remote Attestation (default: disabled)])],
+    [ ENABLED_RA=$enableval ],
+    [ ENABLED_RA=no ]
+    )
+if test "$ENABLED_RA" = "yes" && test "$ENABLED_TLS13" = "yes" && test "$ENABLED_KEYING_MATERIAL" = "yes"
+then
+    ENABLED_RA="yes"
+    AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_REMOTE_ATTESTATION"
+else
+    ENABLED_RA="no"
+fi
+
 # TLS Extensions
 AC_ARG_ENABLE([tlsx],
     [AS_HELP_STRING([--enable-tlsx],[Enable all TLS Extensions (default: disabled)])],
@@ -8967,6 +8981,7 @@ echo "   * Renegotiation Indication:   $ENABLED_RENEGOTIATION_INDICATION"
 echo "   * Secure Renegotiation:       $ENABLED_SECURE_RENEGOTIATION"
 echo "   * Fallback SCSV:              $ENABLED_FALLBACK_SCSV"
 echo "   * Keying Material Exporter:   $ENABLED_KEYING_MATERIAL"
+echo "   * Remote Attestation:         $ENABLED_RA"
 echo "   * All TLS Extensions:         $ENABLED_TLSX"
 echo "   * PKCS#7:                     $ENABLED_PKCS7"
 echo "   * S/MIME:                     $ENABLED_SMIME"
