@@ -1749,7 +1749,7 @@ if(WOLFSSL_REMOTE_ATTESTATION)
         message(FATAL_ERROR "Remote Attestation supported only with Keying Material Exporter (WOLFSSL_KEYING_MATERIAL)")
     endif()
     if(NOT WOLFSSL_ECH)
-        message(FATAL_ERROR "Remote Attestation supported only with Encrypted Client Hello (WOLFSSL_ECH)")
+        message(WARNING "Remote Attestation recommends Encrypted Client Hello (WOLFSSL_ECH)")
     endif()
 
     # TODO: Include proper checks for features. I will hardcode them for now.
