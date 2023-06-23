@@ -5165,8 +5165,7 @@ AC_ARG_ENABLE([ra],
     )
 if test "$ENABLED_RA" = "yes" && test "$ENABLED_TLS13" = "yes" && test "$ENABLED_KEYING_MATERIAL" = "yes"
 then
-    ENABLED_RA="yes"
-    AM_CFLAGS="$AM_CFLAGS -DWOLFSSL_REMOTE_ATTESTATION"
+    AM_CFLAGS="$AM_CFLAGS -DHAVE_REMOTE_ATTESTATION"
 else
     ENABLED_RA="no"
 fi
