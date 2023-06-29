@@ -1698,73 +1698,6 @@ if(WOLFSSL_SYS_CA_CERTS)
     endif()
 endif()
 
-### START ### Remote Attestation and its dependencies
-
-# Hybrid Public Key Encryption (RFC9180)
-add_option("WOLFSSL_HPKE"
-        "Enable wolfSSL hybrid public key encryption (default: disabled)"
-        "no" "yes;no")
-
-if(WOLFSSL_HPKE)
-    if(NOT WOLFSSL_ECC)
-        message(FATAL_ERROR "HPKE supported only with ECC (WOLFSSL_ECC)")
-    endif()
-    list(APPEND WOLFSSL_DEFINITIONS "-DHAVE_HPKE")
-endif()
-
-# Encrypted Client Hello (ECH)
-add_option("WOLFSSL_ECH"
-        "Enable wolfSSL encrypted client hello (default: disabled)"
-        "no" "yes;no")
-
-if(WOLFSSL_ECH)
-    if(NOT WOLFSSL_HPKE)
-        message(FATAL_ERROR "ECH supported only with HPKE (WOLFSSL_HPKE)")
-    endif()
-    if(NOT WOLFSSL_SNI)
-        message(FATAL_ERROR "ECH supported only with SNI (WOLFSSL_SNI)")
-    endif()
-    list(APPEND WOLFSSL_DEFINITIONS "-DHAVE_ECH")
-endif()
-
-# Keying Material Exporter / TLS Exporter
-add_option("WOLFSSL_KEYING_MATERIAL"
-        "Enable wolfSSL keying material export (default: disabled)"
-        "no" "yes;no")
-
-if(WOLFSSL_KEYING_MATERIAL)
-    list(APPEND WOLFSSL_DEFINITIONS "-DHAVE_KEYING_MATERIAL")
-endif()
-
-# Remote Attestation
-add_option("WOLFSSL_REMOTE_ATTESTATION"
-        "Enable wolfSSL remote attestation (default: disabled)"
-        "no" "yes;no")
-
-if(WOLFSSL_REMOTE_ATTESTATION)
-    if(NOT WOLFSSL_TLS13)
-        message(FATAL_ERROR "Remote Attestation supported only for TLSv1.3 (WOLFSSL_TLS13)")
-    endif()
-    if(NOT WOLFSSL_KEYING_MATERIAL)
-        message(FATAL_ERROR "Remote Attestation supported only with Keying Material Exporter (WOLFSSL_KEYING_MATERIAL)")
-    endif()
-    if(NOT WOLFSSL_ECH)
-        message(WARNING "Remote Attestation recommends Encrypted Client Hello (WOLFSSL_ECH)")
-    endif()
-
-    # TODO: Include proper checks for features. I will hardcode them for now.
-    list(APPEND WOLFSSL_DEFINITIONS
-            "-DWOLFSSL_ASN_TEMPLATE"
-            "-DWOLFSSL_CERT_GEN"
-            "-DWOLFSSL_KEY_GEN"
-            "-DWOLFSSL_CUSTOM_OID"
-            "-DHAVE_OID_ENCODING"
-            "-DWOLFSSL_CERT_EXT"
-            "-DHAVE_REMOTE_ATTESTATION")
-endif()
-
-### END ### Remote Attestation and its dependencies
-
 # FLAGS operations
 
 if(WOLFSSL_AESCCM)
@@ -1911,6 +1844,25 @@ add_option("WOLFSSL_CAAM"
     "no" "yes;no")
 if (WOLFSSL_CAAM)
    list(APPEND WOLFSSL_DEFINITIONS  "-DWOLFSSL_CAAM")
+endif()
+
+# Remote Attestation
+add_option("WOLFSSL_REMOTE_ATTESTATION"
+        "Enable wolfSSL remote attestation (default: disabled)"
+        "no" "yes;no")
+
+if(WOLFSSL_REMOTE_ATTESTATION)
+    if(NOT WOLFSSL_TLS13)
+        message(FATAL_ERROR "Remote Attestation supported only for TLSv1.3 (WOLFSSL_TLS13)")
+    endif()
+    if(NOT WOLFSSL_KEYING_MATERIAL)
+        message(FATAL_ERROR "Remote Attestation supported only with Keying Material Exporter (WOLFSSL_KEYING_MATERIAL)")
+    endif()
+    if(NOT WOLFSSL_ECH)
+        message(WARNING "Remote Attestation recommends Encrypted Client Hello (WOLFSSL_ECH)")
+    endif()
+
+    list(APPEND WOLFSSL_DEFINITIONS "-DHAVE_REMOTE_ATTESTATION")
 endif()
 
 
