@@ -12646,6 +12646,10 @@ static int TLSX_GetSizeWithEch(WOLFSSL* ssl, byte* semaphore, byte msgType,
     TLSX* echX = NULL;
     TLSX* serverNameX = NULL;
     TLSX** extensions = NULL;
+#ifdef HAVE_REMOTE_ATTESTATION
+    TLSX *attReq = NULL;
+    ATT_REQUEST *tmpAttReq = NULL;
+#endif
 #ifdef WOLFSSL_SMALL_STACK
     char* tmpServerName = NULL;
 #else
@@ -12705,6 +12709,31 @@ static int TLSX_GetSizeWithEch(WOLFSSL* ssl, byte* semaphore, byte msgType,
             ret = 0;
     }
 
+#ifdef HAVE_REMOTE_ATTESTATION
+    /* if type is outer remove remote attestation request */
+    if (echX != NULL && ((WOLFSSL_ECH*)echX->data)->type == ECH_TYPE_OUTER) {
+        if (ssl->extensions) {
+            attReq = TLSX_Find(ssl->extensions, TLSX_ATTESTATION_REQUEST);
+
+            if (attReq != NULL)
+                extensions = &ssl->extensions;
+        }
+
+        if (attReq == NULL && ssl->ctx && ssl->ctx->extensions) {
+            attReq = TLSX_Find(ssl->ctx->extensions, TLSX_ATTESTATION_REQUEST);
+            extensions = &ssl->ctx->extensions;
+        }
+
+        /* store a copy before removing it */
+        if (attReq != NULL) {
+            tmpAttReq = TLSX_AttRequest_NewCopy((ATT_REQUEST *) attReq->data, ssl->heap);
+        }
+
+        // remove the attestation request
+        TLSX_Remove(extensions, TLSX_ATTESTATION_REQUEST, ssl->heap);
+    }
+#endif /* HAVE_REMOTE_ATTESTATION */
+
     if (ret == 0 && ssl->extensions)
         ret = TLSX_GetSize(ssl->extensions, semaphore, msgType, pLength);
 
@@ -12722,6 +12751,18 @@ static int TLSX_GetSizeWithEch(WOLFSSL* ssl, byte* semaphore, byte msgType,
         if (ret == WOLFSSL_SUCCESS)
             ret = 0;
     }
+
+#ifdef HAVE_REMOTE_ATTESTATION
+    if (tmpAttReq != NULL) {
+        ret = TLSX_UseAttestationRequest(extensions, tmpAttReq, ssl->heap, wolfSSL_is_server(ssl));
+
+        if (ret == WOLFSSL_SUCCESS) {
+            ret = 0;
+        }
+
+        XFREE(tmpAttReq, ssl->heap, DYNAMIC_TYPE_TLSX);
+    }
+#endif /* HAVE_REMOTE_ATTESTATION */
 
 #ifdef WOLFSSL_SMALL_STACK
     XFREE(tmpServerName, ssl->heap, DYNAMIC_TYPE_TMP_BUFFER);
@@ -12841,6 +12882,10 @@ static int TLSX_WriteWithEch(WOLFSSL* ssl, byte* output, byte* semaphore,
     TLSX* echX = NULL;
     TLSX* serverNameX = NULL;
     TLSX** extensions = NULL;
+#ifdef HAVE_REMOTE_ATTESTATION
+    TLSX *attReq = NULL;
+    ATT_REQUEST *tmpAttReq = NULL;
+#endif
 #ifdef WOLFSSL_SMALL_STACK
     char* tmpServerName = NULL;
 #else
@@ -12903,6 +12948,31 @@ static int TLSX_WriteWithEch(WOLFSSL* ssl, byte* output, byte* semaphore,
             ret = 0;
     }
 
+#ifdef HAVE_REMOTE_ATTESTATION
+    /* if type is outer remove remote attestation request */
+    if (echX != NULL && ((WOLFSSL_ECH*)echX->data)->type == ECH_TYPE_OUTER) {
+        if (ssl->extensions) {
+            attReq = TLSX_Find(ssl->extensions, TLSX_ATTESTATION_REQUEST);
+
+            if (attReq != NULL)
+                extensions = &ssl->extensions;
+        }
+
+        if (attReq == NULL && ssl->ctx && ssl->ctx->extensions) {
+            attReq = TLSX_Find(ssl->ctx->extensions, TLSX_ATTESTATION_REQUEST);
+            extensions = &ssl->ctx->extensions;
+        }
+
+        /* store a copy before removing it */
+        if (attReq != NULL) {
+            tmpAttReq = TLSX_AttRequest_NewCopy((ATT_REQUEST *) attReq->data, ssl->heap);
+        }
+
+        // remove the attestation request
+        TLSX_Remove(extensions, TLSX_ATTESTATION_REQUEST, ssl->heap);
+    }
+#endif /* HAVE_REMOTE_ATTESTATION */
+
     if (echX != NULL) {
         /* turn ech on so it doesn't write, then write it last */
         TURN_ON(semaphore, TLSX_ToSemaphore(echX->type));
@@ -12944,6 +13014,18 @@ static int TLSX_WriteWithEch(WOLFSSL* ssl, byte* output, byte* semaphore,
         if (ret == WOLFSSL_SUCCESS)
             ret = 0;
     }
+
+#ifdef HAVE_REMOTE_ATTESTATION
+    if (tmpAttReq != NULL) {
+        ret = TLSX_UseAttestationRequest(extensions, tmpAttReq, ssl->heap, wolfSSL_is_server(ssl));
+
+        if (ret == WOLFSSL_SUCCESS) {
+            ret = 0;
+        }
+
+        XFREE(tmpAttReq, ssl->heap, DYNAMIC_TYPE_TLSX);
+    }
+#endif /* HAVE_REMOTE_ATTESTATION */
 
 #ifdef WOLFSSL_SMALL_STACK
     XFREE(tmpServerName, ssl->heap, DYNAMIC_TYPE_TMP_BUFFER);
