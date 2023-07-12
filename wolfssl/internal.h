@@ -2693,6 +2693,7 @@ struct TLSX {
 
 WOLFSSL_LOCAL TLSX* TLSX_Find(TLSX* list, TLSX_Type type);
 WOLFSSL_LOCAL void  TLSX_Remove(TLSX** list, TLSX_Type type, void* heap);
+WOLFSSL_LOCAL void  *TLSX_RemoveNoFree(TLSX** list, TLSX_Type type);
 WOLFSSL_LOCAL void  TLSX_FreeAll(TLSX* list, void* heap);
 WOLFSSL_LOCAL int   TLSX_SupportExtensions(WOLFSSL* ssl);
 WOLFSSL_LOCAL int   TLSX_PopulateExtensions(WOLFSSL* ssl, byte isRequest);
@@ -2770,7 +2771,28 @@ WOLFSSL_LOCAL int VerifyAttestation(WOLFSSL *ssl);
  */
 WOLFSSL_LOCAL ATT_REQUEST *TLSX_AttRequest_NewCopy(const ATT_REQUEST *req, void *heap);
 
+/**
+ * Adds a new attestation request (copying it beforehand for memory management by wolfSSL).
+ * @param extensions    The extensions list
+ * @param req           The request to add
+ * @param heap          The heap
+ * @param is_server     Whether the extension is from server
+ * @return WOLFSSL_SUCCESS on success, negative values on error
+ * @see TLSX_UseAttestationRequestNoCopy
+ */
 WOLFSSL_LOCAL int TLSX_UseAttestationRequest(TLSX** extensions, const ATT_REQUEST *req, void* heap, byte is_server);
+
+
+/**
+ * Adds a new attestation request.
+ * @param extensions    The extensions list
+ * @param req           The request to add
+ * @param heap          The heap
+ * @param is_server     Whether the extension is from server
+ * @return WOLFSSL_SUCCESS on success, negative values on error
+ * @see TLSX_UseAttestationRequest
+ */
+WOLFSSL_LOCAL int TLSX_UseAttestationRequestNoCopy(TLSX** extensions, const ATT_REQUEST *req, void* heap, byte is_server);
 
 #endif
 

@@ -1920,9 +1920,27 @@ int TLSX_UseAttestationRequest(TLSX **extensions, const ATT_REQUEST *req, void *
         return MEMORY_ERROR;
     }
 
-    int ret = TLSX_Push(extensions, TLSX_ATTESTATION_REQUEST, req_cpy, heap);
-    if (ret != 0) {
+    int ret = TLSX_UseAttestationRequestNoCopy(extensions, req_cpy, heap, is_server);
+    if (ret != WOLFSSL_SUCCESS) {
         TLSX_AttestationRequest_FreeAll(req_cpy, heap);
+    }
+
+    return ret;
+}
+
+int TLSX_UseAttestationRequestNoCopy(TLSX **extensions, const ATT_REQUEST *req, void *heap, byte is_server) {
+    if (!extensions || !req) {
+        return BAD_FUNC_ARG;
+    }
+    if (is_server && req->is_request) {
+        return BAD_FUNC_ARG;
+    }
+    if (req == NULL) {
+        return MEMORY_ERROR;
+    }
+
+    int ret = TLSX_Push(extensions, TLSX_ATTESTATION_REQUEST, req, heap);
+    if (ret != 0) {
         return ret;
     }
 
@@ -10748,6 +10766,32 @@ void TLSX_Remove(TLSX** list, TLSX_Type type, void* heap)
     }
 }
 
+/** Remove an extension and returns the data*/
+void *TLSX_RemoveNoFree(TLSX** list, TLSX_Type type)
+{
+    TLSX* extension;
+    TLSX** next;
+
+    if (list == NULL)
+        return NULL;
+
+    extension = *list;
+    next = list;
+
+    while (extension && extension->type != type) {
+        next = &extension->next;
+        extension = extension->next;
+    }
+
+    if (extension) {
+        *next = extension->next;
+        extension->next = NULL;
+        return extension->data;
+    }
+
+    return NULL;
+}
+
 #if defined(WOLFSSL_TLS13) && defined(HAVE_ECH)
 #define GREASE_ECH_SIZE 160
 #define MAX_PUBLIC_NAME_SZ 256
@@ -12647,8 +12691,7 @@ static int TLSX_GetSizeWithEch(WOLFSSL* ssl, byte* semaphore, byte msgType,
     TLSX* serverNameX = NULL;
     TLSX** extensions = NULL;
 #ifdef HAVE_REMOTE_ATTESTATION
-    TLSX *attReq = NULL;
-    ATT_REQUEST *tmpAttReq = NULL;
+    ATT_REQUEST *attReq = NULL;
 #endif
 #ifdef WOLFSSL_SMALL_STACK
     char* tmpServerName = NULL;
@@ -12712,25 +12755,22 @@ static int TLSX_GetSizeWithEch(WOLFSSL* ssl, byte* semaphore, byte msgType,
 #ifdef HAVE_REMOTE_ATTESTATION
     /* if type is outer remove remote attestation request */
     if (echX != NULL && ((WOLFSSL_ECH*)echX->data)->type == ECH_TYPE_OUTER) {
+        // remove extension without freeing the memory to avoid copying
         if (ssl->extensions) {
-            attReq = TLSX_Find(ssl->extensions, TLSX_ATTESTATION_REQUEST);
+            attReq = TLSX_RemoveNoFree(extensions, TLSX_ATTESTATION_REQUEST);
 
-            if (attReq != NULL)
+            if (attReq != NULL) {
                 extensions = &ssl->extensions;
+            }
         }
 
         if (attReq == NULL && ssl->ctx && ssl->ctx->extensions) {
-            attReq = TLSX_Find(ssl->ctx->extensions, TLSX_ATTESTATION_REQUEST);
-            extensions = &ssl->ctx->extensions;
-        }
+            attReq = TLSX_RemoveNoFree(&ssl->ctx->extensions, TLSX_ATTESTATION_REQUEST);
 
-        /* store a copy before removing it */
-        if (attReq != NULL) {
-            tmpAttReq = TLSX_AttRequest_NewCopy((ATT_REQUEST *) attReq->data, ssl->heap);
+            if (attReq != NULL) {
+                extensions = &ssl->ctx->extensions;
+            }
         }
-
-        // remove the attestation request
-        TLSX_Remove(extensions, TLSX_ATTESTATION_REQUEST, ssl->heap);
     }
 #endif /* HAVE_REMOTE_ATTESTATION */
 
@@ -12753,14 +12793,12 @@ static int TLSX_GetSizeWithEch(WOLFSSL* ssl, byte* semaphore, byte msgType,
     }
 
 #ifdef HAVE_REMOTE_ATTESTATION
-    if (tmpAttReq != NULL) {
-        ret = TLSX_UseAttestationRequest(extensions, tmpAttReq, ssl->heap, wolfSSL_is_server(ssl));
+    if (attReq != NULL) {
+        ret = TLSX_UseAttestationRequestNoCopy(extensions, attReq, ssl->heap, wolfSSL_is_server(ssl));
 
         if (ret == WOLFSSL_SUCCESS) {
             ret = 0;
         }
-
-        XFREE(tmpAttReq, ssl->heap, DYNAMIC_TYPE_TLSX);
     }
 #endif /* HAVE_REMOTE_ATTESTATION */
 
