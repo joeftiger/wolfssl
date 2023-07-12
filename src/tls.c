@@ -10786,7 +10786,11 @@ void *TLSX_RemoveNoFree(TLSX** list, TLSX_Type type)
     if (extension) {
         *next = extension->next;
         extension->next = NULL;
-        return extension->data;
+
+        void *data = extension->data;
+        XFREE(extension, heap, DYNAMIC_TYPE_TLSX);
+
+        return data;
     }
 
     return NULL;
