@@ -2086,8 +2086,11 @@ int GenerateAttestation(WOLFSSL *ssl) {
     int ret = 0;
     byte *c = NULL;
     byte *att_buffer = NULL;
+    struct timespec start, c_end, g_end;
 
     WOLFSSL_ENTER("GenerateAttestation");
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
     if (!ssl || !ssl->attestationRequest || !ssl->generateAttestation || !wolfSSL_is_server(ssl) ||
         !ssl->attestationRequest->is_request) {
         ret = BAD_FUNC_ARG;
@@ -2108,6 +2111,7 @@ int GenerateAttestation(WOLFSSL *ssl) {
         ret = ATTESTATION_KEYING_E;
         goto exit;
     }
+    clock_gettime(CLOCK_MONOTONIC, &c_end);
 
     // attestation certificate
     att_buffer = XMALLOC(ATT_BUFFER_SIZE, ssl->heap, DYNAMIC_TYPE_TLSX);
@@ -2134,6 +2138,10 @@ int GenerateAttestation(WOLFSSL *ssl) {
     }
     // extension data gets copied, so it's free to clear below buffers now
 
+    clock_gettime(CLOCK_MONOTONIC, &g_end);
+    timespec_subtract(&start, &c_end, &ssl->benchmark.server_att_request_challenge_generation);
+    timespec_subtract(&start, &g_end, &ssl->benchmark.server_att_request_generation);
+
     exit:
     if (c) {
         XFREE(c, ssl->heap, DYNAMIC_TYPE_TLSX);
@@ -2156,8 +2164,11 @@ int GenerateAttestation(WOLFSSL *ssl) {
 int VerifyAttestation(WOLFSSL *ssl) {
     int ret = 0;
     unsigned char *challenge_buffer = NULL;
+    struct timespec start, c_end, g_end;
 
     WOLFSSL_ENTER("VerifyAttestation");
+    clock_gettime(CLOCK_MONOTONIC, &start);
+
     if (!ssl || !ssl->attestationRequest || !ssl->verifyAttestation || wolfSSL_is_server(ssl) ||
         ssl->attestationRequest->is_request) {
         ret = BAD_FUNC_ARG;
@@ -2178,6 +2189,7 @@ int VerifyAttestation(WOLFSSL *ssl) {
         ret = ATTESTATION_KEYING_E;
         goto exit;
     }
+    clock_gettime(CLOCK_MONOTONIC, &c_end);
 
     ret = ssl->verifyAttestation(req, challenge_buffer);
 
@@ -2185,6 +2197,10 @@ int VerifyAttestation(WOLFSSL *ssl) {
     if (challenge_buffer) {
         XFREE(challenge_buffer, ssl->heap, DYNAMIC_TYPE_TLSX);
     }
+
+    clock_gettime(CLOCK_MONOTONIC, &g_end);
+    timespec_subtract(&start, &c_end, &ssl->benchmark.client_certificate_verify_att_request_challenge_generation);
+    timespec_subtract(&start, &g_end, &ssl->benchmark.client_certificate_verify_att_request);
 
     WOLFSSL_LEAVE("VerifyAttestation", ret);
     return ret;
@@ -11813,7 +11829,7 @@ static int TLSX_GetSize(TLSX* list, byte* semaphore, byte msgType,
 
 /** Writes the extensions of a list in a buffer. */
 static int TLSX_Write(TLSX* list, byte* output, byte* semaphore,
-                         byte msgType, word16* pOffset)
+                         byte msgType, word16* pOffset, WOLFSSL *ssl)
 {
     int    ret = 0;
     TLSX*  extension;
@@ -11821,6 +11837,11 @@ static int TLSX_Write(TLSX* list, byte* output, byte* semaphore,
     word16 length_offset = 0;
     byte   isRequest = (msgType == client_hello ||
                         msgType == certificate_request);
+
+    struct timespec start, end;
+    struct timespec ra_start, ra_end;
+
+    clock_gettime(CLOCK_MONOTONIC, &start);
 
     while ((extension = list)) {
         list = extension->next;
@@ -11983,7 +12004,10 @@ static int TLSX_Write(TLSX* list, byte* output, byte* semaphore,
 #ifdef HAVE_REMOTE_ATTESTATION
             case TLSX_ATTESTATION_REQUEST:
                 WOLFSSL_MSG("Attestation Request extension to write");
+
+                clock_gettime(CLOCK_MONOTONIC, &ra_start);
                 offset += ATT_WRITE((const ATT_REQUEST *) extension->data, output + offset, msgType);
+                clock_gettime(CLOCK_MONOTONIC, &ra_end);
                 break;
 #endif
 #ifdef WOLFSSL_SRTP
@@ -12029,6 +12053,15 @@ static int TLSX_Write(TLSX* list, byte* output, byte* semaphore,
     }
 
     *pOffset += offset;
+
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    if (msgType == encrypted_extensions) {
+        timespec_subtract(&start, &end, &ssl->benchmark.server_extensions);
+        timespec_subtract(&ra_start, &ra_end, &ssl->benchmark.server_att_request);
+    } else {
+        timespec_subtract(&start, &end, &ssl->benchmark.client_extensions);
+        timespec_subtract(&ra_start, &ra_end, &ssl->benchmark.client_att_request);
+    }
 
     return ret;
 }
@@ -13018,12 +13051,12 @@ static int TLSX_WriteWithEch(WOLFSSL* ssl, byte* output, byte* semaphore,
 
     if (ret == 0 && ssl->extensions) {
         ret = TLSX_Write(ssl->extensions, output + *pOffset, semaphore,
-            msgType, pOffset);
+            msgType, pOffset, ssl);
     }
 
     if (ret == 0 && ssl->ctx && ssl->ctx->extensions) {
         ret = TLSX_Write(ssl->ctx->extensions, output + *pOffset, semaphore,
-            msgType, pOffset);
+            msgType, pOffset, ssl);
     }
 
     if (echX != NULL) {
@@ -13033,12 +13066,12 @@ static int TLSX_WriteWithEch(WOLFSSL* ssl, byte* output, byte* semaphore,
 
     if (ret == 0 && ssl->extensions) {
         ret = TLSX_Write(ssl->extensions, output + *pOffset, semaphore,
-            msgType, pOffset);
+            msgType, pOffset, ssl);
     }
 
     if (ret == 0 && ssl->ctx && ssl->ctx->extensions) {
         ret = TLSX_Write(ssl->ctx->extensions, output + *pOffset, semaphore,
-            msgType, pOffset);
+            msgType, pOffset, ssl);
     }
 
     if (serverNameX != NULL) {
@@ -13156,13 +13189,13 @@ int TLSX_WriteRequest(WOLFSSL* ssl, byte* output, byte msgType, word16* pOffset)
     {
         if (ssl->extensions) {
             ret = TLSX_Write(ssl->extensions, output + offset, semaphore,
-                             msgType, &offset);
+                             msgType, &offset, ssl);
             if (ret != 0)
                 return ret;
         }
         if (ssl->ctx && ssl->ctx->extensions) {
             ret = TLSX_Write(ssl->ctx->extensions, output + offset, semaphore,
-                             msgType, &offset);
+                             msgType, &offset, ssl);
             if (ret != 0)
                 return ret;
         }
@@ -13476,7 +13509,7 @@ int TLSX_WriteResponse(WOLFSSL *ssl, byte* output, byte msgType, word16* pOffset
         offset += OPAQUE16_LEN; /* extensions length */
 
         ret = TLSX_Write(ssl->extensions, output + offset, semaphore,
-                         msgType, &offset);
+                         msgType, &offset, ssl);
         if (ret != 0)
             return ret;
 

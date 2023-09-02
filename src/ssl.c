@@ -31224,6 +31224,10 @@ WOLFSSL_CTX* wolfSSL_get_SSL_CTX(WOLFSSL* ssl)
     return ssl->ctx;
 }
 
+Benchmark *wolfSSL_GetBenchmark(WOLFSSL *ssl) {
+    return &ssl->benchmark;
+}
+
 #if defined(OPENSSL_ALL) || \
     defined(OPENSSL_EXTRA) || defined(HAVE_STUNNEL) || \
     defined(WOLFSSL_NGINX) || defined(WOLFSSL_HAPROXY)

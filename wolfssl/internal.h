@@ -5560,6 +5560,7 @@ struct WOLFSSL {
     VerifyAttCallback verifyAttestation;
     GenAttCallback generateAttestation;
 #endif /* HAVE_REMOTE_ATTESTATION */
+    Benchmark benchmark;
 };
 
 /*
