@@ -763,6 +763,7 @@ enum AlertDescription {
     bad_certificate_status_response = 113, /**< RFC 6066, section 8 */
     unknown_psk_identity            = 115, /**< RFC 4279, section 2 */
     certificate_required            = 116, /**< RFC 8446, section 8.2 */
+    unsupported_attestation         = 118, /**< remote attestation, arbitrary value for now */
     no_application_protocol         = 120
 };
 
@@ -3674,6 +3675,108 @@ WOLFSSL_API void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl);
 
 /* TLS Extensions */
 
+#ifdef HAVE_REMOTE_ATTESTATION
+// TODO: WIP definitions
+
+#define ATT_CHALLENGE_LABEL "EXPORTER: Remote Attestation"
+#define ATT_CHALLENGE_LABEL_LEN strlen(ATT_CHALLENGE_LABEL)
+#define ATT_BUFFER_SIZE 16384
+
+/**
+ * Attestation Request data type.
+ */
+typedef struct ATT_REQUEST {
+    /** Is this union a request or a response (from either client or server) */
+    word8 is_request;
+    /** The nonce for challenge generation */
+    word64 nonce;
+    /** The challenge size required for attestation verification */
+    // TODO: This could be fixed size if the types are well-defined and have well-defined challenge sizes.
+    //       However, this would need to be managed by IANA, e.g.
+    //       The type can then also be a simple enumeration for further simplicity.
+    word16 challengeSize;
+    /** The .data size */
+    word16 size;
+    /**
+     * If request: attestation type
+     * If response: attestation certificate
+     */
+    void *data;
+} ATT_REQUEST;
+
+/**
+ * The attestation generation callback.
+ *
+ * @param req       The attestation request to generate data from
+ * @param c         The challenge (from TLS-exporter) to create a fresh attestation certificate.
+ *                  Its length can be inferred by the attestation field `challengeSize`.
+ * @param output    The output buffer to store the attestation data.
+ *                  Its length is `ATT_BUFFER_SIZE`:
+ * @return  Must be number of written bytes.
+ *          ATTESTATION_TYPE_SUPPORT_E if attestation type is unsupported (needed to send alert).
+ *          Any other negative number indicates other failure type
+ */
+typedef int (*GenAttCallback)(const ATT_REQUEST *req, const byte *c, byte *output);
+/**
+ * The attestation verify callback.
+ * @param att   The attestation-/certificate data
+ * @param c     The re-created challenge used for the attestation
+ *              Its length can be inferred by the attestation field `challengeSize`.
+ * @return Must be 0 on success.
+ */
+typedef int (*VerifyAttCallback)(const ATT_REQUEST *att, const byte *c);
+
+/**
+ * Prints an attestation request to the given file.
+ * @param fp                The FILE pointer to print to
+ * @param req               The attestation request to print
+ * @see wolfSSL_AttestationRequest_print_ex
+ */
+WOLFSSL_API void wolfSSL_AttestationRequest_print(XFILE fp, const ATT_REQUEST *req);
+
+/**
+ * Prints an attestation request to the given file.
+ * @param fp                The FILE pointer to print to
+ * @param req               The attestation request to print
+ * @param dataIsStr         Whether the attestation type / certificate should be printed as a string
+ * @see wolfSSL_AttestationRequest_print
+ */
+WOLFSSL_API void wolfSSL_AttestationRequest_print_ex(XFILE fp, const ATT_REQUEST *req, byte dataIsStr);
+
+/**
+ * Attestation Request extension.
+ */
+WOLFSSL_API int wolfSSL_AttestationRequest(WOLFSSL *ssl, const ATT_REQUEST *req);
+
+/**
+ * Sets the callback for attestation verification on 'client' side.
+ *
+ * @param ssl       The SSL session
+ * @param verifyAtt The attestation verify callback.
+ * @return SSL_SUCCESS if client, SIDE_ERROR if server, and BAD_FUNC_ARG if any param is NULL.
+ */
+WOLFSSL_API int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, VerifyAttCallback verifyAtt);
+
+/**
+ * Sets the callback for attestation generation on 'server' side.
+ *
+ * @param ssl       The SSL session
+ * @param genAtt    The attestation generator.
+ * @return SSL_SUCCESS if server, SIDE_ERROR if client, and BAD_FUNC_ARG if any param is NULL.
+ */
+WOLFSSL_API int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, GenAttCallback genAtt);
+
+/**
+ * Returns a received attestation request.
+ * Will be NULL if not received.
+ *
+ * @param ssl The SSL session
+ * @return received attestation request data. NULL if not present.
+ */
+WOLFSSL_API const ATT_REQUEST *wolfSSL_GetAttestationRequest(WOLFSSL *ssl);
+
+#endif /* HAVE_REMOTE_ATTESTATION */
+
 /* Server Name Indication */
 #ifdef HAVE_SNI
 
@@ -5168,6 +5271,68 @@ WOLFSSL_API int wolfSSL_dtls_cid_get_tx(WOLFSSL* ssl, unsigned char* buffer,
 #define DTLS1_VERSION                    0xFEFF
 #define DTLS1_2_VERSION                  0xFEFD
 #define DTLS1_3_VERSION                  0xFEFC
+
+#include "time.h"
+
+typedef struct Benchmark {
+    struct timespec handshake;
+    struct timespec client_hello;
+    struct timespec client_extensions;
+    struct timespec client_att_request;
+    struct timespec client_certificate_verify;
+    struct timespec client_certificate_verify_att_request;
+    struct timespec client_certificate_verify_att_request_challenge_generation;
+    struct timespec server_hello;
+    struct timespec server_extensions;
+    struct timespec server_att_request;
+    struct timespec server_att_request_generation;
+    struct timespec server_att_request_challenge_generation;
+} Benchmark;
+
+WOLFSSL_API Benchmark *wolfSSL_GetBenchmark(WOLFSSL *ssl);
+WOLFSSL_API static void timespec_subtract(struct timespec *start, struct timespec *end, struct timespec *result) {
+    /*
+    if start.ns < end.ns:
+        result.ns = end.ns - start.ns
+        result.s  = end.s  - start.s
+    else if start.ns > end.ns:
+        dt = start.ns - end.ns
+        result.ns = 1'000'000'000 - dt      // nanoseconds
+        result.s  = end.s - start.s - 1     // offset due to underflow
+    else:
+        result.ns = 0
+        result.s  = end.s - start.s
+    */
+
+    if (start->tv_nsec < end->tv_nsec) {
+        result->tv_nsec = end->tv_nsec - start->tv_nsec;
+        result->tv_sec = end->tv_sec - start->tv_sec;
+    } else if (start->tv_nsec > end->tv_nsec) {
+        result->tv_nsec = 1000000000L - (start->tv_nsec - end->tv_nsec);    // dt in ns
+        result->tv_sec = end->tv_sec - start->tv_sec - 1;                   // 1 offset due to underflow
+    } else {
+        result->tv_nsec = 0;
+        result->tv_sec = end->tv_sec - start->tv_sec;
+    }
+
+    /*
+    // Perform the carrend for the later subtraction bend updating end.
+    if (start->tv_nsec < end->tv_nsec) {
+        __syscall_slong_t nsec = (end->tv_nsec - start->tv_nsec) / 1000000000L + 1;
+        end->tv_nsec -= 1000000000L * nsec;
+        end->tv_sec += nsec;
+    }
+    if (start->tv_nsec - end->tv_nsec > 1000000000L) {
+        __syscall_slong_t nsec = (start->tv_nsec - end->tv_nsec) / 1000000000L;
+        end->tv_nsec += 1000000000L * nsec;
+        end->tv_sec -= nsec;
+    }
+
+    // Compute the time remaining to wait. tv_nsec is certainly positive.
+    result->tv_sec = start->tv_sec - end->tv_sec;
+    result->tv_nsec = start->tv_nsec - end->tv_nsec;
+    */
+}
 
 #ifdef __cplusplus
     }  /* extern "C" */

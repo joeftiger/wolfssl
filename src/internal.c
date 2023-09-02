@@ -18818,6 +18818,12 @@ const char* AlertTypeToString(int type)
                 return bad_certificate_status_response_str;
             }
 
+        case unsupported_attestation:
+        {
+            static const char unsupported_attestation_str[] = "unsupported_attestation";
+            return unsupported_attestation_str;
+        }
+
         case no_application_protocol:
             {
                 static const char no_application_protocol_str[] =
@@ -23634,6 +23640,15 @@ const char* wolfSSL_ERR_reason_error_string(unsigned long e)
 
     case DUPLICATE_TLS_EXT_E:
         return "Duplicate TLS extension in message.";
+
+    case ATTESTATION_KEYING_E:
+        return "Keying Binder error in attestation generation";
+
+    case ATTESTATION_GENERATION_E:
+        return "Attestation generation error in custom VerifyAttCallback";
+
+    case ATTESTATION_TYPE_SUPPORT_E:
+        return "Attestation type not supported";
 
     default :
         return "unknown error number";

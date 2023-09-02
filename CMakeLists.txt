@@ -1877,6 +1877,25 @@ if (WOLFSSL_CAAM)
    list(APPEND WOLFSSL_DEFINITIONS  "-DWOLFSSL_CAAM")
 endif()
 
+# Remote Attestation
+add_option("WOLFSSL_REMOTE_ATTESTATION"
+        "Enable wolfSSL remote attestation (default: disabled)"
+        "no" "yes;no")
+
+if(WOLFSSL_REMOTE_ATTESTATION)
+    if(NOT WOLFSSL_TLS13)
+        message(FATAL_ERROR "Remote Attestation supported only for TLSv1.3 (WOLFSSL_TLS13)")
+    endif()
+    if(NOT WOLFSSL_KEYING_MATERIAL)
+        message(FATAL_ERROR "Remote Attestation supported only with Keying Material Exporter (WOLFSSL_KEYING_MATERIAL)")
+    endif()
+    if(NOT WOLFSSL_ECH)
+        message(WARNING "Remote Attestation recommends Encrypted Client Hello (WOLFSSL_ECH)")
+    endif()
+
+    list(APPEND WOLFSSL_DEFINITIONS "-DHAVE_REMOTE_ATTESTATION")
+endif()
+
 
 # Generates the BUILD_* flags. These control what source files are included in
 # the library. A series of AM_CONDITIONALs handle this in configure.ac.

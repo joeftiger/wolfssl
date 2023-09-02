@@ -3451,6 +3451,83 @@ void* wolfSSL_CTX_GetHeap(WOLFSSL_CTX* ctx, WOLFSSL* ssl)
 }
 
 
+#ifdef HAVE_REMOTE_ATTESTATION
+
+void wolfSSL_AttestationRequest_print(XFILE fp, const ATT_REQUEST *req) {
+    return wolfSSL_AttestationRequest_print_ex(fp, req, 0);
+}
+
+void wolfSSL_AttestationRequest_print_ex(XFILE fp, const ATT_REQUEST *req, byte dataIsStr) {
+    if (!fp || !req) {
+        return;
+    }
+
+    fprintf(fp, "Attestation Request:\n");
+    fprintf(fp, "    Request: %d\n", req->is_request);
+    fprintf(fp, "    Nonce: 0x%lX\n", req->nonce);
+    fprintf(fp, "    Challenge Size: %d\n", req->challengeSize);
+    if (req->is_request) {
+        fprintf(fp, "    Type Size: %d\n", req->size);
+        fprintf(fp, "    Type : %s", dataIsStr ? "" : "0x");
+    } else {
+        fprintf(fp, "    Attestation Size: %d\n", req->size);
+        fprintf(fp, "    Attestation : %s", dataIsStr ? "" : "0x");
+    }
+    byte *type = req->data;
+    for (int i = 0; i < req->size; i++) {
+        fprintf(fp, dataIsStr ? "%c" : "%X", type[i]);
+    }
+    fprintf(fp, "\n");
+}
+
+int wolfSSL_AttestationRequest(WOLFSSL *ssl, const ATT_REQUEST *req) {
+    int ret;
+    WOLFSSL_ENTER("wolfSSL_AttestationRequest");
+
+    if (ssl == NULL) {
+        ret = BAD_FUNC_ARG;
+    } else {
+        ret = TLSX_UseAttestationRequest(&ssl->extensions, req, ssl->heap, wolfSSL_is_server(ssl));
+    }
+
+    WOLFSSL_LEAVE("wolfSSL_AttestationRequest", ret);
+    return ret;
+}
+
+int wolfSSL_SetVerifyAttestation(WOLFSSL *ssl, VerifyAttCallback verifyAtt) {
+    if (ssl == NULL || verifyAtt == NULL) {
+        return BAD_FUNC_ARG;
+    }
+    if (wolfSSL_is_server(ssl)) {
+        return SIDE_ERROR;
+    }
+
+    ssl->verifyAttestation = verifyAtt;
+    return SSL_SUCCESS;
+}
+
+int wolfSSL_SetGenerateAttestation(WOLFSSL *ssl, GenAttCallback genAtt) {
+    if (ssl == NULL || genAtt == NULL) {
+        return BAD_FUNC_ARG;
+    }
+    if (!wolfSSL_is_server(ssl)) {
+        return SIDE_ERROR;
+    }
+
+    ssl->generateAttestation = genAtt;
+    return SSL_SUCCESS;
+}
+
+const ATT_REQUEST *wolfSSL_GetAttestationRequest(WOLFSSL *ssl) {
+    if (ssl == NULL) {
+        return NULL;
+    }
+
+    return ssl->attestationRequest;
+}
+
+#endif /* HAVE_REMOTE_ATTESTATION */
+
 #ifdef HAVE_SNI
 
 WOLFSSL_ABI
@@ -31467,6 +31544,10 @@ WOLFSSL_CTX* wolfSSL_get_SSL_CTX(WOLFSSL* ssl)
 {
     WOLFSSL_ENTER("wolfSSL_get_SSL_CTX");
     return ssl->ctx;
+}
+
+Benchmark *wolfSSL_GetBenchmark(WOLFSSL *ssl) {
+    return &ssl->benchmark;
 }
 
 #if defined(OPENSSL_ALL) || \

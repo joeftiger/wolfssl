@@ -2715,6 +2715,9 @@ typedef enum {
     TLSX_KEY_QUIC_TP_PARAMS         = 0x0039, /* RFC 9001, ch. 8.2 */
     #endif
 #endif
+#ifdef HAVE_REMOTE_ATTESTATION
+    TLSX_ATTESTATION_REQUEST        = 0x0040, /* remote attestation, arbitrary number for now */
+#endif
     TLSX_RENEGOTIATION_INFO         = 0xff01,
 #ifdef WOLFSSL_QUIC
     TLSX_KEY_QUIC_TP_PARAMS_DRAFT   = 0xffa5, /* from draft-ietf-quic-tls-27 */
@@ -2797,6 +2800,7 @@ struct TLSX {
 
 WOLFSSL_LOCAL TLSX* TLSX_Find(TLSX* list, TLSX_Type type);
 WOLFSSL_LOCAL void  TLSX_Remove(TLSX** list, TLSX_Type type, void* heap);
+WOLFSSL_LOCAL void  *TLSX_RemoveNoFree(TLSX** list, TLSX_Type type);
 WOLFSSL_LOCAL void  TLSX_FreeAll(TLSX* list, void* heap);
 WOLFSSL_LOCAL int   TLSX_SupportExtensions(WOLFSSL* ssl);
 WOLFSSL_LOCAL int   TLSX_PopulateExtensions(WOLFSSL* ssl, byte isRequest);
@@ -2843,6 +2847,61 @@ WOLFSSL_LOCAL int TLSX_Append(TLSX** list, TLSX_Type type,
 #error Using TLS extensions requires HAVE_TLS_EXTENSIONS to be defined.
 
 #endif /* HAVE_TLS_EXTENSIONS */
+
+#ifdef HAVE_REMOTE_ATTESTATION
+
+/**
+ * Generates an attestation certificate from the user-defined callback seeded by a challenge created by the TLS-Exporter.
+ *
+ * @param ssl The SSL/TLS object
+ * @return 0 on success. ATTESTATION_TYPE_SUPPORT_E on unsupported attestation type. Any other value indicates an error.
+ * @see WOLFSSL->generateAttestation()
+ */
+WOLFSSL_LOCAL int GenerateAttestation(WOLFSSL *ssl);
+
+/**
+ * Verifies an attestation certificate from the user-defined callback seeded a challenge created by the TLS-Exporter.
+ *
+ * @param ssl The SSL/TLS object
+ * @return 0 on success. Any other value indicates an error.
+ * @see WOLFSSL->verifyAttestation()
+ */
+WOLFSSL_LOCAL int VerifyAttestation(WOLFSSL *ssl);
+
+/**
+ * Creates a copy of the given attestation request.
+ * (In order to have the memory managed by wolfSSL alone)
+ *
+ * @param req   The request to clone
+ * @param heap  The heap to use
+ * @return the pointer to the new clone (if successful)
+ */
+WOLFSSL_LOCAL ATT_REQUEST *TLSX_AttRequest_NewCopy(const ATT_REQUEST *req, void *heap);
+
+/**
+ * Adds a new attestation request (copying it beforehand for memory management by wolfSSL).
+ * @param extensions    The extensions list
+ * @param req           The request to add
+ * @param heap          The heap
+ * @param is_server     Whether the extension is from server
+ * @return WOLFSSL_SUCCESS on success, negative values on error
+ * @see TLSX_UseAttestationRequestNoCopy
+ */
+WOLFSSL_LOCAL int TLSX_UseAttestationRequest(TLSX** extensions, const ATT_REQUEST *req, void* heap, byte is_server);
+
+
+/**
+ * Adds a new attestation request.
+ * @param extensions    The extensions list
+ * @param req           The request to add
+ * @param heap          The heap
+ * @param is_server     Whether the extension is from server
+ * @return WOLFSSL_SUCCESS on success, negative values on error
+ * @see TLSX_UseAttestationRequest
+ */
+WOLFSSL_LOCAL int TLSX_UseAttestationRequestNoCopy(TLSX** extensions, const ATT_REQUEST *req, void* heap, byte is_server);
+
+#endif
 
 /** Server Name Indication - RFC 6066 (session 3) */
 #ifdef HAVE_SNI
@@ -5639,6 +5698,12 @@ struct WOLFSSL {
 #if defined(WOLFSSL_TLS13) && defined(HAVE_ECH)
     WOLFSSL_EchConfig* echConfigs;
 #endif
+#ifdef HAVE_REMOTE_ATTESTATION
+    ATT_REQUEST *attestationRequest;
+    VerifyAttCallback verifyAttestation;
+    GenAttCallback generateAttestation;
+#endif /* HAVE_REMOTE_ATTESTATION */
+    Benchmark benchmark;
 };
 
 /*

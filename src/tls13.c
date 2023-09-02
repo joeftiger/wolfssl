@@ -4063,6 +4063,8 @@ int SendTls13ClientHello(WOLFSSL* ssl)
 
     WOLFSSL_START(WC_FUNC_CLIENT_HELLO_SEND);
     WOLFSSL_ENTER("SendTls13ClientHello");
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
 
     if (ssl == NULL) {
         return BAD_FUNC_ARG;
@@ -4490,6 +4492,9 @@ int SendTls13ClientHello(WOLFSSL* ssl)
     if (ret == 0)
         FreeAsyncCtx(ssl, 0);
 #endif
+
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    timespec_subtract(&start, &end, &ssl->benchmark.client_hello);
 
     WOLFSSL_LEAVE("SendTls13ClientHello", ret);
     WOLFSSL_END(WC_FUNC_CLIENT_HELLO_SEND);
@@ -6396,6 +6401,8 @@ int DoTls13ClientHello(WOLFSSL* ssl, const byte* input, word32* inOutIdx,
 
     WOLFSSL_START(WC_FUNC_CLIENT_HELLO_DO);
     WOLFSSL_ENTER("DoTls13ClientHello");
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
 
 #ifdef WOLFSSL_ASYNC_CRYPT
     if (ssl->async == NULL) {
@@ -6879,6 +6886,9 @@ int DoTls13ClientHello(WOLFSSL* ssl, const byte* input, word32* inOutIdx,
 
 exit_dch:
 
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    timespec_subtract(&start, &end, &ssl->benchmark.client_hello);
+
     WOLFSSL_LEAVE("DoTls13ClientHello", ret);
 
 #ifdef WOLFSSL_ASYNC_CRYPT
@@ -6933,6 +6943,8 @@ int SendTls13ServerHello(WOLFSSL* ssl, byte extMsgType)
 
     WOLFSSL_START(WC_FUNC_SERVER_HELLO_SEND);
     WOLFSSL_ENTER("SendTls13ServerHello");
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
 
     /* When ssl->options.dtlsStateful is not set then cookie is calculated in
      * dtls.c */
@@ -7105,6 +7117,9 @@ int SendTls13ServerHello(WOLFSSL* ssl, byte extMsgType)
     if (!ssl->options.groupMessages || extMsgType != server_hello)
         ret = SendBuffered(ssl);
 
+    clock_gettime(CLOCK_MONOTONIC, &end);
+    timespec_subtract(&start, &end, &ssl->benchmark.server_hello);
+
     WOLFSSL_LEAVE("SendTls13ServerHello", ret);
     WOLFSSL_END(WC_FUNC_SERVER_HELLO_SEND);
 
@@ -7127,8 +7142,12 @@ static int SendTls13EncryptedExtensions(WOLFSSL* ssl)
     word32 idx;
     int    sendSz;
 
+    struct timespec ee_start, ee_end;
+    struct timespec gen_start, gen_end;
+
     WOLFSSL_START(WC_FUNC_ENCRYPTED_EXTENSIONS_SEND);
     WOLFSSL_ENTER("SendTls13EncryptedExtensions");
+    clock_gettime(CLOCK_MONOTONIC, &ee_start);
 
     ssl->options.buildingMsg = 1;
     ssl->keys.encryptionOn = 1;
@@ -7156,6 +7175,22 @@ static int SendTls13EncryptedExtensions(WOLFSSL* ssl)
     if ((ret = DeriveTls13Keys(ssl, handshake_key,
                                ENCRYPT_AND_DECRYPT_SIDE, 1)) != 0)
         return ret;
+
+#ifdef HAVE_REMOTE_ATTESTATION
+    // TODO: Does this belong here? It should be AFTER input hashing (for the TLS exporter)
+    //       and before writing encrypted extensions.
+    if (ssl->attestationRequest) {
+        clock_gettime(CLOCK_MONOTONIC, &gen_start);
+        if ((ret = GenerateAttestation(ssl)) != 0) {
+            clock_gettime(CLOCK_MONOTONIC, &gen_end);
+            if (ret == ATTESTATION_TYPE_SUPPORT_E) {
+                SendAlert(ssl, alert_fatal, unsupported_attestation);
+                WOLFSSL_ERROR_VERBOSE(ATTESTATION_TYPE_SUPPORT_E);
+            }
+            return ret;
+        }
+    }
+#endif /* HAVE_REMOTE_ATTESTATION */
 
     /* Setup encrypt/decrypt keys for following messages. */
 #ifdef WOLFSSL_EARLY_DATA
@@ -7259,6 +7294,8 @@ static int SendTls13EncryptedExtensions(WOLFSSL* ssl)
     if (!ssl->options.groupMessages)
         ret = SendBuffered(ssl);
 
+    clock_gettime(CLOCK_MONOTONIC, &ee_end);
+    timespec_subtract(&ee_start, &ee_end, &ssl->benchmark.server_extensions);
 
     WOLFSSL_LEAVE("SendTls13EncryptedExtensions", ret);
     WOLFSSL_END(WC_FUNC_ENCRYPTED_EXTENSIONS_SEND);
@@ -8841,6 +8878,8 @@ static int DoTls13CertificateVerify(WOLFSSL* ssl, byte* input,
 
     WOLFSSL_START(WC_FUNC_CERTIFICATE_VERIFY_DO);
     WOLFSSL_ENTER("DoTls13CertificateVerify");
+    struct timespec cv_start, cv_end;
+    clock_gettime(CLOCK_MONOTONIC, &cv_start);
 
 #if defined(WOLFSSL_RENESAS_TSIP_TLS)
     ret = tsip_Tls13CertificateVerify(ssl, input, inOutIdx, totalSz);
@@ -9228,6 +9267,17 @@ static int DoTls13CertificateVerify(WOLFSSL* ssl, byte* input,
             }
         #endif /* !NO_RSA && WC_RSA_PSS */
 
+        #ifdef HAVE_REMOTE_ATTESTATION \
+            // TODO: Does this belong here? It should be AFTER input hashing (for the TLS exporter)
+            //       and after receiving encrypted extensions.
+            if (ssl->attestationRequest && ssl->verifyAttestation) {
+                ret = VerifyAttestation(ssl);
+                if (ret != 0) {
+                    goto exit_dcv;
+                }
+            }
+        #endif
+
             /* Advance state and proceed */
             ssl->options.asyncState = TLS_ASYNC_FINALIZE;
         } /* case TLS_ASYNC_VERIFY */
@@ -9264,6 +9314,9 @@ static int DoTls13CertificateVerify(WOLFSSL* ssl, byte* input,
     } /* switch(ssl->options.asyncState) */
 
 exit_dcv:
+
+    clock_gettime(CLOCK_MONOTONIC, &cv_end);
+    timespec_subtract(&cv_start, &cv_end, &ssl->benchmark.client_certificate_verify);
 
     WOLFSSL_LEAVE("DoTls13CertificateVerify", ret);
     WOLFSSL_END(WC_FUNC_CERTIFICATE_VERIFY_DO);
@@ -11500,6 +11553,8 @@ int wolfSSL_connect_TLSv13(WOLFSSL* ssl)
     int ret = 0;
 
     WOLFSSL_ENTER("wolfSSL_connect_TLSv13");
+    struct timespec start, end;
+    clock_gettime(CLOCK_MONOTONIC, &start);
 
 #ifdef HAVE_ERRNO_H
     errno = 0;
@@ -11870,6 +11925,9 @@ int wolfSSL_connect_TLSv13(WOLFSSL* ssl)
         #endif
 
             ssl->error = 0; /* clear the error */
+
+            clock_gettime(CLOCK_MONOTONIC, &end);
+            timespec_subtract(&start, &end, &ssl->benchmark.handshake);
 
             WOLFSSL_LEAVE("wolfSSL_connect_TLSv13", WOLFSSL_SUCCESS);
             return WOLFSSL_SUCCESS;
@@ -12643,7 +12701,10 @@ int wolfSSL_accept_TLSv13(WOLFSSL* ssl)
 #endif
     int ret = 0;
 
+    struct timespec start, end;
+
     WOLFSSL_ENTER("wolfSSL_accept_TLSv13");
+    clock_gettime(CLOCK_MONOTONIC, &start);
 
 #ifdef HAVE_ERRNO_H
     errno = 0;
@@ -13128,6 +13189,9 @@ int wolfSSL_accept_TLSv13(WOLFSSL* ssl)
 #endif
 
             ssl->error = 0; /* clear the error */
+
+            clock_gettime(CLOCK_MONOTONIC, &end);
+            timespec_subtract(&start, &end, &ssl->benchmark.handshake);
 
             WOLFSSL_LEAVE("wolfSSL_accept", WOLFSSL_SUCCESS);
             return WOLFSSL_SUCCESS;
