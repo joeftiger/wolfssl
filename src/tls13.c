@@ -4005,6 +4005,7 @@ int SendTls13ClientHello(WOLFSSL* ssl)
     WOLFSSL_START(WC_FUNC_CLIENT_HELLO_SEND);
     WOLFSSL_ENTER("SendTls13ClientHello");
     struct timespec start, end;
+    struct timespec extensions_start, extensions_end;
     clock_gettime(CLOCK_MONOTONIC, &start);
 
     if (ssl == NULL) {
@@ -4310,6 +4311,8 @@ int SendTls13ClientHello(WOLFSSL* ssl)
     args->output[args->idx++] = COMP_LEN;
     args->output[args->idx++] = NO_COMPRESSION;
 
+
+    clock_gettime(CLOCK_MONOTONIC, &extensions_start);
 #if defined(HAVE_ECH)
     /* write inner then outer */
     if (ssl->options.useEch == 1) {
@@ -4367,6 +4370,8 @@ int SendTls13ClientHello(WOLFSSL* ssl)
         &args->length);
     if (ret != 0)
         return ret;
+
+    clock_gettime(CLOCK_MONOTONIC, &extensions_end);
 
     args->idx += args->length;
 
@@ -4465,6 +4470,7 @@ int SendTls13ClientHello(WOLFSSL* ssl)
 #endif
 
     clock_gettime(CLOCK_MONOTONIC, &end);
+    timespec_subtract(&extensions_start, &extensions_end, &ssl->benchmark.client_extensions);
     timespec_subtract(&start, &end, &ssl->benchmark.client_hello);
 
     WOLFSSL_LEAVE("SendTls13ClientHello", ret);

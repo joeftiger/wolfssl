@@ -11845,10 +11845,7 @@ static int TLSX_Write(TLSX* list, byte* output, byte* semaphore,
     byte   isRequest = (msgType == client_hello ||
                         msgType == certificate_request);
 
-    struct timespec start, end;
     struct timespec ra_start, ra_end;
-
-    clock_gettime(CLOCK_MONOTONIC, &start);
 
     while ((extension = list)) {
         list = extension->next;
@@ -12061,12 +12058,9 @@ static int TLSX_Write(TLSX* list, byte* output, byte* semaphore,
 
     *pOffset += offset;
 
-    clock_gettime(CLOCK_MONOTONIC, &end);
     if (msgType == encrypted_extensions) {
-        timespec_subtract(&start, &end, &ssl->benchmark.server_extensions);
         timespec_subtract(&ra_start, &ra_end, &ssl->benchmark.server_att_request);
     } else {
-        timespec_subtract(&start, &end, &ssl->benchmark.client_extensions);
         timespec_subtract(&ra_start, &ra_end, &ssl->benchmark.client_att_request);
     }
 
