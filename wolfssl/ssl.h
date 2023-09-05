@@ -5291,19 +5291,6 @@ typedef struct Benchmark {
 
 WOLFSSL_API Benchmark *wolfSSL_GetBenchmark(WOLFSSL *ssl);
 WOLFSSL_API static void timespec_subtract(struct timespec *start, struct timespec *end, struct timespec *result) {
-    /*
-    if start.ns < end.ns:
-        result.ns = end.ns - start.ns
-        result.s  = end.s  - start.s
-    else if start.ns > end.ns:
-        dt = start.ns - end.ns
-        result.ns = 1'000'000'000 - dt      // nanoseconds
-        result.s  = end.s - start.s - 1     // offset due to underflow
-    else:
-        result.ns = 0
-        result.s  = end.s - start.s
-    */
-
     if (start->tv_nsec < end->tv_nsec) {
         result->tv_nsec = end->tv_nsec - start->tv_nsec;
         result->tv_sec = end->tv_sec - start->tv_sec;
@@ -5314,24 +5301,6 @@ WOLFSSL_API static void timespec_subtract(struct timespec *start, struct timespe
         result->tv_nsec = 0;
         result->tv_sec = end->tv_sec - start->tv_sec;
     }
-
-    /*
-    // Perform the carrend for the later subtraction bend updating end.
-    if (start->tv_nsec < end->tv_nsec) {
-        __syscall_slong_t nsec = (end->tv_nsec - start->tv_nsec) / 1000000000L + 1;
-        end->tv_nsec -= 1000000000L * nsec;
-        end->tv_sec += nsec;
-    }
-    if (start->tv_nsec - end->tv_nsec > 1000000000L) {
-        __syscall_slong_t nsec = (start->tv_nsec - end->tv_nsec) / 1000000000L;
-        end->tv_nsec += 1000000000L * nsec;
-        end->tv_sec -= nsec;
-    }
-
-    // Compute the time remaining to wait. tv_nsec is certainly positive.
-    result->tv_sec = start->tv_sec - end->tv_sec;
-    result->tv_nsec = start->tv_nsec - end->tv_nsec;
-    */
 }
 
 #ifdef __cplusplus
